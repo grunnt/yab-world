@@ -31,6 +31,10 @@ cargo run pack
 
 ## The code 
 
+I wrote this in the [Rust language](https://www.rust-lang.org) version 1.55. No game engine was used, just [glutin](https://docs.rs/glutin/latest/glutin) for windowing and OpenGL for rendering. OpenGL bindings are generated using the [gl_generator](https://docs.rs/gl_generator/latest/gl_generator) crate.
+
+YAB-World suffers from Not Invented Here syndrome intentionally: this code was written as a learning experience. Still, there may be some things here that may help others.
+
 The main entrypoint for the application is `src/main.rs`. From here the server and / or client are launched as needed.
 
 Code organization:
