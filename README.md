@@ -4,6 +4,8 @@ Yet Another Block-World. I made this to learn more about Rust, OpenGL and game d
 
 [Read more about this on my blog](https://www.basvs.dev/blog/yab-world).
 
+You can download and run YAB-World for Windows [here](https://github.com/grunnt/yab-world/releases).
+
 ## How to run from source
 
 Simply check out the code and run using:
