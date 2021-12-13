@@ -1,0 +1,5 @@
+{
+    "terminal.integrated.env.windows": {
+        "RUST_BACKTRACE": "1"
+    }
+}

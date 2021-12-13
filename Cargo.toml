@@ -1,0 +1,18 @@
+[package]
+name = "yab-world"
+version = "0.1.0"
+authors = ["Bas <b.vanschoonhoven@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+client = { path = "./client" }
+server = { path = "./server" }
+common = { path = "./common" }
+gamework = { path = "./gamework" }
+num_cpus = "1.10.0"
+log = "0.4.8"
+flexi_logger = "0.14.4"
+rand = "0.7.3"
+
+[features]
+gl_debug = ["gamework/gl_debug"]

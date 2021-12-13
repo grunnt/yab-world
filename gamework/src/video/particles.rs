@@ -1,0 +1,306 @@
+use super::*;
+use crate::*;
+use nalgebra_glm::{Mat4, Vec3};
+use rand::{prelude::ThreadRng, Rng};
+
+pub struct ParticleSystem {
+    texture: TextureArray,
+    gl: gl::Gl,
+    program: Program,
+    projection_uniform: Uniform,
+    view_uniform: Uniform,
+    viewport_height_uniform: Uniform,
+    vbo: ArrayBuffer,
+    vao: VertexArray,
+    vertices: Vec<ParticleVertex>,
+    particles: Vec<Particle>,
+    emitters: Vec<Emitter>,
+    rng: ThreadRng,
+    last_id: usize,
+}
+
+impl ParticleSystem {
+    pub fn new(gl: &gl::Gl, assets: &Assets, texture: TextureArray) -> Self {
+        let program = Program::load(
+            gl,
+            assets,
+            vec!["shaders/particle.vert", "shaders/particle.frag"],
+        )
+        .unwrap();
+
+        program.set_used();
+        let projection_uniform = program.get_uniform("projection").unwrap();
+        let view_uniform = program.get_uniform("view").unwrap();
+        let viewport_height_uniform = program.get_uniform("viewport_height").unwrap();
+        if let Some(uniform) = program.get_uniform("textures") {
+            uniform.set_uniform_1i(0);
+        }
+        // Vertex array and object
+        let vbo = ArrayBuffer::new(gl);
+        let vao = VertexArray::new(gl);
+        vao.bind();
+        vbo.bind();
+        ParticleVertex::vertex_attrib_pointers(gl);
+
+        ParticleSystem {
+            gl: gl.clone(),
+            program,
+            projection_uniform,
+            view_uniform,
+            viewport_height_uniform,
+            vbo,
+            vao,
+            vertices: Vec::new(),
+            texture,
+            particles: Vec::new(),
+            emitters: Vec::new(),
+            rng: rand::thread_rng(),
+            last_id: 0,
+        }
+    }
+
+    pub fn emitter(&mut self, position: Vec3, target: ParticleTarget, definition: EmitterDef) {
+        let life_time_s = definition.duration;
+        let emitter = Emitter {
+            position,
+            target,
+            definition,
+            accumulated_s: 0.0,
+            life_time_s,
+        };
+        self.emitters.push(emitter);
+    }
+
+    pub fn update(&mut self, delta_s: f32, player_position: Vec3) {
+        // Remove inactive particles
+        self.particles.retain(|p| p.lifetime > 0.0);
+
+        // Emit new particles
+        let mut new_particles = Vec::new();
+        for emitter in &mut self.emitters {
+            if emitter.is_active() {
+                emitter.accumulated_s += delta_s;
+                while emitter.accumulated_s > emitter.definition.particle_interval_s {
+                    emitter.accumulated_s -= emitter.definition.particle_interval_s;
+                    let speed = emitter.definition.velocity.min
+                        + self.rng.gen::<f32>()
+                            * (emitter.definition.velocity.max - emitter.definition.velocity.min);
+                    let pitch = self.rng.gen_range(
+                        -emitter.definition.spread_angle,
+                        emitter.definition.spread_angle,
+                    ) + emitter.definition.pitch;
+                    let yaw = self.rng.gen_range(
+                        -emitter.definition.spread_angle,
+                        emitter.definition.spread_angle,
+                    ) + emitter.definition.yaw;
+                    let velocity = glm::rotate_vec3(&Vec3::y(), pitch, &Vec3::z());
+                    let velocity = glm::rotate_vec3(&velocity, yaw, &Vec3::x()) * speed;
+                    let lifetime = self
+                        .rng
+                        .gen_range(emitter.definition.life.min, emitter.definition.life.max);
+                    let position = if let Some(area) = emitter.definition.start_area {
+                        emitter.position
+                            + Vec3::new(
+                                area.x * self.rng.gen_range(-1.0, 1.0),
+                                area.y * self.rng.gen_range(-1.0, 1.0),
+                                area.z * self.rng.gen_range(-1.0, 1.0),
+                            )
+                    } else {
+                        emitter.position
+                    };
+                    new_particles.push(Particle {
+                        position,
+                        velocity,
+                        target: emitter.target,
+                        texture_layer: emitter.definition.texture_layers
+                            [self.last_id % emitter.definition.texture_layers.len()],
+                        size: self
+                            .rng
+                            .gen_range(emitter.definition.size.min, emitter.definition.size.max),
+                        lifetime,
+                        total_lifetime: lifetime,
+                        id: self.last_id,
+                    });
+                    self.last_id += 1;
+                }
+            }
+        }
+        self.particles.append(&mut new_particles);
+        // Update particles
+        for particle in &mut self.particles {
+            match particle.target {
+                ParticleTarget::Fixed(position) => {
+                    // Move towards a target
+                    let speed = particle.velocity.norm() * delta_s;
+                    let velocity = (position - particle.position).normalize() * speed;
+                    particle.position += velocity;
+                    if particle.position.metric_distance(&position) < speed {
+                        // Close to target so discard this particle
+                        particle.lifetime = 0.0;
+                    }
+                }
+                ParticleTarget::Player => {
+                    // Move towards a target
+                    let speed = particle.velocity.norm() * delta_s;
+                    let velocity = (player_position - particle.position).normalize() * speed;
+                    particle.position += velocity;
+                    if particle.position.metric_distance(&player_position) < speed {
+                        // Close to target so discard this particle
+                        particle.lifetime = 0.0;
+                    }
+                }
+                ParticleTarget::None => {
+                    // Linear movement
+                    particle.position += particle.velocity * delta_s;
+                    particle.lifetime -= delta_s;
+                }
+            }
+        }
+        // Update emitter timers
+        for emitter in &mut self.emitters {
+            if !emitter.definition.continuous {
+                emitter.life_time_s -= delta_s;
+            }
+        }
+        // Remove inactive emitters
+        self.emitters
+            .retain(|e| e.definition.continuous || e.life_time_s > 0.0);
+    }
+
+    pub fn draw(&mut self, view: &Mat4, projection: &Mat4, viewport_height: f32) {
+        // Generate vertices for the particles
+        for particle in &self.particles {
+            self.vertices.push(ParticleVertex::new(
+                particle.position.x,
+                particle.position.y,
+                particle.position.z,
+                particle.texture_layer,
+                particle.size,
+                particle.lifetime / particle.total_lifetime,
+            ));
+        }
+
+        if self.vertices.is_empty() {
+            return;
+        }
+
+        // Upload the vertices
+        self.vbo.bind();
+        self.vbo
+            .stream_draw_data_null::<ParticleVertex>(self.vertices.len());
+        self.vbo.stream_draw_data::<ParticleVertex>(&self.vertices);
+        self.vbo.unbind();
+
+        // Render the particles
+        self.program.set_used();
+        self.view_uniform.set_uniform_matrix_4fv(view);
+        self.projection_uniform.set_uniform_matrix_4fv(projection);
+        self.viewport_height_uniform.set_uniform_1f(viewport_height);
+        self.vao.bind();
+        self.texture.texture().bind_at(0);
+        unsafe {
+            self.gl.Enable(gl::DEPTH_TEST);
+            self.gl.Enable(gl::BLEND);
+            self.gl.Enable(gl::VERTEX_PROGRAM_POINT_SIZE);
+            self.gl.BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
+            self.gl
+                .DrawArrays(gl::POINTS, 0, self.vertices.len() as gl::types::GLsizei);
+        }
+
+        // Clear the vertex buffer for the next frame
+        self.vertices.clear();
+    }
+
+    pub fn texture_array(&self) -> &TextureArray {
+        &self.texture
+    }
+
+    pub fn particle_count(&self) -> usize {
+        self.particles.len()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Effect {
+    pub emitters: Vec<EmitterDef>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Emitter {
+    pub position: Vec3,
+    pub target: ParticleTarget,
+    pub definition: EmitterDef,
+    pub accumulated_s: f32,
+    pub life_time_s: f32,
+}
+
+impl Emitter {
+    pub fn is_active(&self) -> bool {
+        self.definition.continuous || self.life_time_s > 0.0
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct EmitterDef {
+    pub pitch: f32,
+    pub yaw: f32,
+    pub spread_angle: f32,
+    pub start_area: Option<Vec3>,
+    pub delay: f32,
+    pub duration: f32,
+    pub continuous: bool,
+    pub particle_interval_s: f32,
+    pub size: Range,
+    pub life: Range,
+    pub velocity: Range,
+    pub texture_layers: Vec<f32>,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum ParticleTarget {
+    Fixed(Vec3),
+    Player,
+    None,
+}
+
+#[derive(Clone, Debug)]
+pub struct Particle {
+    pub id: usize,
+    pub position: Vec3,
+    pub target: ParticleTarget,
+    pub velocity: Vec3,
+    pub texture_layer: f32,
+    pub size: f32,
+    pub lifetime: f32,
+    pub total_lifetime: f32,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Range {
+    pub min: f32,
+    pub max: f32,
+}
+
+impl Range {
+    pub fn new(min: f32, max: f32) -> Self {
+        Range { min, max }
+    }
+}
+
+#[derive(VertexAttribPointers, Copy, Clone, Debug)]
+#[repr(C, packed)]
+pub struct ParticleVertex {
+    #[location = "0"]
+    pub position: data::f32_f32_f32,
+    #[location = "1"]
+    pub layer_size_life: data::f32_f32_f32,
+}
+
+impl ParticleVertex {
+    pub fn new(x: f32, y: f32, z: f32, layer: f32, size: f32, life: f32) -> Self {
+        ParticleVertex {
+            position: (x, y, z).into(),
+            layer_size_life: (layer, size, life).into(),
+        }
+    }
+}
