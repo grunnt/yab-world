@@ -249,6 +249,7 @@ impl DeferredPipeline {
             self.gl.Disable(gl::CULL_FACE);
             self.gl.Disable(gl::DEPTH_TEST);
             self.gl.Disable(gl::BLEND);
+            self.gl.Enable(gl::FRAMEBUFFER_SRGB);
             self.position_buffer.bind_at(0);
             self.color_buffer.bind_at(1);
             self.normal_buffer.bind_at(2);
@@ -257,6 +258,7 @@ impl DeferredPipeline {
                 random_texture.bind_at(4);
             }
             self.gl.DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+            self.gl.Disable(gl::FRAMEBUFFER_SRGB);
         }
     }
 }

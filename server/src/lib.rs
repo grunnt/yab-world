@@ -22,6 +22,7 @@ use glm::Vec3;
 use log::*;
 use num_cpus;
 use player_store::PlayerStore;
+use rand::Rng;
 use std::{thread::{sleep, Builder}};
 use std::time::{Duration, Instant};
 use world_generator::WorldGenerator;
@@ -71,6 +72,7 @@ impl YabServer {
                 let mut delta_accumulator = 0.0;
                 let mut daynight = DayNight::new(10.0 * 60.0);
                 daynight.set_time(world_store.world_def().gametime);
+                let mut rng = rand::thread_rng();
                 debug!("World time is {}", daynight.get_time());
 
                 // Server warmup: prepare radius of chunks around starting area
@@ -161,11 +163,13 @@ impl YabServer {
                                             client.player_id,
                                             &client.data.username,
                                         );
-                                        //let spawn_range = CHUNK_SIZE as f32;
-                                        //client.data.x = rng.gen_range(-spawn_range, spawn_range);
-                                        //client.data.y = rng.gen_range(-spawn_range, spawn_range);
-                                        client.data.x = REGION_SIZE_BLOCKS as f32 / 2.0;
-                                        client.data.y = REGION_SIZE_BLOCKS as f32 / 2.0;
+                                        // Give some starting resources 
+                                        client.data.inventory.add(0, 200);
+                                        client.data.inventory.add(1, 50);
+                                        client.data.inventory.add(2, 25);
+                                        let spawn_range = CHUNK_SIZE as f32 * 0.25;
+                                        client.data.x = REGION_SIZE_BLOCKS as f32 / 2.0 + rng.gen_range(-spawn_range, spawn_range);
+                                        client.data.y = REGION_SIZE_BLOCKS as f32 / 2.0 + rng.gen_range(-spawn_range, spawn_range);
                                         client.data.z = chunks
                                             .get_top_z(client.data.x as i16, client.data.y as i16)
                                             as f32
