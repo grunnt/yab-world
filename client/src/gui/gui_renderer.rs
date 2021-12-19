@@ -41,11 +41,7 @@ impl GuiRenderer {
             meshes.push(HashMap::new());
         }
 
-        let text = Text::new(
-            &assets,
-            &gl,
-            vec![("fredoka.ttf", 28.0), ("fredoka.ttf", 14.0)],
-        );
+        let text = Text::new(&assets, &gl, vec![("font.ttf", 28.0), ("font.ttf", 14.0)]);
 
         let texture = TextureAtlas::load(
             &assets.assets_path("atlas/blocks.png"),
