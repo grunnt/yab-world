@@ -358,7 +358,7 @@ impl InGameState {
                         ChunkColumnPos::from_world_block_coords(wbx, wby),
                     ) {
                         // Add resources in block to inventory
-                        let block_def = data.block_registry.get(block as Block);
+                        let block_def = data.block_registry.get(block.kind());
                         for (resource_type, count) in &block_def.resource_yield {
                             data.inventory.add(*resource_type, *count);
                         }
