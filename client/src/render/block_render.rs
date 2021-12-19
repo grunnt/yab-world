@@ -56,7 +56,7 @@ impl BlockRenderer {
 
         let block_textures = Texture::load_array(
             texture_paths,
-            TextureFormat::RGBA8,
+            TextureFormat::SRGBA8,
             TextureWrap::None,
             TextureFilter::MipMapNearest,
             gl,

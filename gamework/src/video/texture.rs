@@ -31,6 +31,7 @@ pub enum TextureFormat {
     R16,
     RGB8,
     RGBA8,
+    SRGBA8,
     RGBA16F,
 }
 
@@ -41,6 +42,7 @@ impl TextureFormat {
             TextureFormat::R16 => gl::R16 as gl::types::GLint,
             TextureFormat::RGB8 => gl::RGB8 as gl::types::GLint,
             TextureFormat::RGBA8 => gl::RGBA8 as gl::types::GLint,
+            TextureFormat::SRGBA8 => gl::SRGB8_ALPHA8 as gl::types::GLint,
             TextureFormat::RGBA16F => gl::RGBA16F as gl::types::GLint,
         }
     }
@@ -51,6 +53,7 @@ impl TextureFormat {
             TextureFormat::R16 => gl::RED,
             TextureFormat::RGB8 => gl::RGB,
             TextureFormat::RGBA8 => gl::RGBA,
+            TextureFormat::SRGBA8 => gl::RGBA,
             TextureFormat::RGBA16F => gl::RGBA,
         }
     }
@@ -61,6 +64,7 @@ impl TextureFormat {
             TextureFormat::R16 => gl::UNSIGNED_SHORT,
             TextureFormat::RGB8 => gl::UNSIGNED_BYTE,
             TextureFormat::RGBA8 => gl::UNSIGNED_BYTE,
+            TextureFormat::SRGBA8 => gl::UNSIGNED_BYTE,
             TextureFormat::RGBA16F => gl::FLOAT,
         }
     }
@@ -71,6 +75,7 @@ impl TextureFormat {
             TextureFormat::R16 => 2,
             TextureFormat::RGB8 => 3,
             TextureFormat::RGBA8 => 4,
+            TextureFormat::SRGBA8 => 4,
             TextureFormat::RGBA16F => 8,
         }
     }

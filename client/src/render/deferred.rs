@@ -5,7 +5,7 @@ use gl;
 use nalgebra_glm::*;
 use rand::Rng;
 
-const SSAO_KERNEL_SIZE: usize = 128;
+const SSAO_KERNEL_SIZE: usize = 64;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
@@ -86,7 +86,7 @@ impl DeferredPipeline {
                 let z: f32 = rng.gen();
                 let mut v = Vec3::new(x - 0.5, y - 0.5, z - 0.5);
                 // Make sure more points are closer to the origin
-                v *= 0.1 + 0.9 * scale * scale;
+                v *= scale * scale;
                 kernel.push(v);
             }
             uniform.set_uniform_3fv(&kernel);
@@ -249,6 +249,7 @@ impl DeferredPipeline {
             self.gl.Disable(gl::CULL_FACE);
             self.gl.Disable(gl::DEPTH_TEST);
             self.gl.Disable(gl::BLEND);
+            self.gl.Enable(gl::FRAMEBUFFER_SRGB);
             self.position_buffer.bind_at(0);
             self.color_buffer.bind_at(1);
             self.normal_buffer.bind_at(2);
@@ -257,6 +258,7 @@ impl DeferredPipeline {
                 random_texture.bind_at(4);
             }
             self.gl.DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+            self.gl.Disable(gl::FRAMEBUFFER_SRGB);
         }
     }
 }

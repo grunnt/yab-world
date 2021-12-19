@@ -13,10 +13,10 @@ uniform sampler2D gLight;
 uniform sampler2D gRandom; 
 
 // SSAO
-const int SSAO_KERNEL_SIZE = 128;
+const int SSAO_KERNEL_SIZE = 64;
 uniform vec3 ssaoKernel[SSAO_KERNEL_SIZE];
 const float ssaoSampleRad = 0.5; 
-const float ssaoBias = 0.15; //25;
+const float ssaoBias = 0.15;
 uniform vec2 ssaoTextureScale;
 
 // Projection
@@ -56,8 +56,8 @@ void main()
     mat3 TBN = mat3(Tangent, Bitangent, inNormal);  
     float ao = 0.0;
     for (int i = 0 ; i < SSAO_KERNEL_SIZE ; i++) {
-        vec3 samplePos = inFragPos + (TBN * ssaoKernel[i]) * ssaoSampleRad; // generate a random point
-        vec4 offset = vec4(samplePos, 1.0); // make it a 4-vector
+        vec3 samplePos = inFragPos + (TBN * ssaoKernel[i]) * ssaoSampleRad;
+        vec4 offset = vec4(samplePos, 1.0); 
         offset = Projection * offset; // project on the near clipping plane
         offset.xyz /= offset.w; // perform perspective divide
         offset.xyz = offset.xyz * 0.5 + 0.5; // transform to (0,1) range
@@ -71,7 +71,7 @@ void main()
 
     // Combine ambient and sunlight
     float lightLevel = pow(inLight.r, 2);
-    vec3 color = (ao * (ambientLightColor + sunColor) + lightLevel) * inColor;
+    vec3 color = pow(ao, 2) * ((ambientLightColor + sunColor) + lightLevel) * inColor;
 
     // Calculate fog
     float fogDistance = length(inFragPos);
