@@ -42,6 +42,7 @@ pub struct InGameState {
     block_place_timer: f32,
     block_remove_timer: f32,
     profile_chart_id: WidgetId,
+    gui_visible: bool,
 }
 
 impl InGameState {
@@ -122,6 +123,7 @@ impl InGameState {
             block_remove_timer: 0.0,
             block_place_timer: 0.0,
             profile_chart_id,
+            gui_visible: true,
         }
     }
 
@@ -204,6 +206,7 @@ impl InGameState {
                 Key::Num6 => self.set_selected_block(data, Block::wood_block()),
                 Key::Num7 => self.set_selected_block(data, Block::lamp_block()),
                 // Key::Num8 => self.set_selected_block(data, Block::water_block()),
+                Key::G => self.gui_visible = !self.gui_visible,
                 _ => (),
             },
             _ => {}
@@ -751,8 +754,10 @@ impl State<GameContext> for InGameState {
         );
 
         self.out_of_range_columns.extend(out_of_range);
-        self.gui.paint(game_context.gui_renderer_mut());
-        game_context.gui_renderer_mut().render();
+        if self.gui_visible {
+            self.gui.paint(game_context.gui_renderer_mut());
+            game_context.gui_renderer_mut().render();
+        }
     }
 
     fn shutdown(&mut self) {}
