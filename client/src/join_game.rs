@@ -118,6 +118,11 @@ impl State<GameContext> for JoinGameState {
                         let address = self.gui.get_value(&self.address_field);
                         match address {
                             GuiValue::String(value) => {
+                                let value = if value == "localhost" {
+                                    "127.1.1.1".to_string()
+                                } else {
+                                    value
+                                };
                                 let server_address = format!("{}:{}", value, DEFAULT_TCP_PORT);
                                 debug!("Join server at address {}", server_address);
                                 data.connect_to_address = Some(server_address);
