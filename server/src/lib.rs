@@ -56,6 +56,7 @@ impl YabServer {
                 let world_list = WorldList::new();
                 let world_folder = world_list.get_world_path(seed);
                 let mut world_store = WorldStore::new(&world_folder, seed, description.as_str(), world_type);
+                let world_type = world_store.world_def().world_type;
                 let mut player_store = PlayerStore::load(&world_folder);
                 let block_registry = BlockRegistry::new(&world_folder);
                 let resource_registry = ResourceRegistry::new(&world_folder);
