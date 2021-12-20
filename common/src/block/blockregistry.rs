@@ -330,7 +330,7 @@ impl BlockRegistry {
                     "small_lamp".to_string(),
                     "small_lamp".to_string(),
                 ],
-                light: 5,
+                light: 8,
                 buildable: true,
                 resource_yield: vec![(1, 1)],
                 resource_cost: vec![(1, 1)],
