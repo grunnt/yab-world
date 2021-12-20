@@ -29,7 +29,6 @@ impl SettingsState {
                 flex_row(1.0),
             ],
         );
-        //gui.set_debug_render(true);
         gui.place(
             gui.root_id(),
             2,

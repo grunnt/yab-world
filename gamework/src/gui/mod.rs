@@ -47,7 +47,6 @@ pub struct Gui<T> {
     last_screen_size: Size,
     grids_need_layout: bool,
     config: GuiConfig,
-    debug_render: bool,
 }
 
 impl<T> Gui<T> {
@@ -64,7 +63,6 @@ impl<T> Gui<T> {
             last_screen_size: Size::zero(),
             grids_need_layout: true,
             config: GuiConfig::default(),
-            debug_render: false,
         }
     }
 
@@ -74,10 +72,6 @@ impl<T> Gui<T> {
 
     pub fn root_id(&self) -> WidgetId {
         self.root
-    }
-
-    pub fn set_debug_render(&mut self, active: bool) {
-        self.debug_render = active;
     }
 
     pub fn get_value(&self, widget_id: &WidgetId) -> GuiValue {

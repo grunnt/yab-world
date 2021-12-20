@@ -31,7 +31,6 @@ pub struct InGameState {
     changed_chunks_to_mesh: HashSet<ChunkPos>,
     out_of_range_columns: HashSet<ChunkColumnPos>,
     gui: Gui<GuiRenderer>,
-    debug_label: WidgetId,
     resource_label: WidgetId,
     selected_label: WidgetId,
     block_place_timer: f32,
@@ -55,27 +54,18 @@ impl InGameState {
             ],
             vec![
                 fixed_row(10.0),
-                fixed_row(50.0),
+                fixed_row(40.0),
                 flex_row(1.0),
-                fixed_row(50.0),
-                fixed_row(20.0),
+                fixed_row(40.0),
                 fixed_row(10.0),
             ],
-        );
-        // gui.set_debug_render(true);
-        let debug_label = gui.place(
-            gui.root_id(),
-            1,
-            1,
-            Box::new(Label::new("".to_string())),
-            CellAlignment::TopLeft,
         );
         let profile_chart_id = gui.place(
             gui.root_id(),
             2,
             1,
             Box::new(ProfileChart::new(75.0)),
-            CellAlignment::Center,
+            CellAlignment::TopRight,
         );
         let selected_label = gui.place(
             gui.root_id(),
@@ -104,7 +94,6 @@ impl InGameState {
             changed_chunks_to_mesh: HashSet::new(),
             out_of_range_columns: HashSet::new(),
             gui,
-            debug_label,
             resource_label,
             selected_label,
             block_remove_timer: 0.0,
@@ -204,19 +193,6 @@ impl InGameState {
         }
         self.gui
             .set_value(&self.resource_label, GuiValue::String(new_text));
-        self.set_selected_block(data, data.selected_block);
-    }
-
-    fn update_debug_label(&mut self, data: &mut GameContext) {
-        let particle_count = data.particles.as_ref().unwrap().particle_count();
-        self.gui.set_value(
-            &self.debug_label,
-            GuiValue::String(format!(
-                "time: {} particles {}",
-                (data.daynight.get_time() * 24.0) as i16,
-                particle_count
-            )),
-        );
         self.set_selected_block(data, data.selected_block);
     }
 
@@ -406,8 +382,6 @@ impl State<GameContext> for InGameState {
             data.starting_position.z,
             Vec3::new(0.75, 0.75, 0.9),
         );
-
-        self.update_debug_label(data);
 
         self.rendering = Some(Rendering::new(data, context));
         self.rendering_mut().camera.yaw = data.starting_yaw;
@@ -689,8 +663,6 @@ impl State<GameContext> for InGameState {
             delta,
             self.rendering().camera().position + Vec3::new(0.0, 0.0, -0.25),
         );
-
-        self.update_debug_label(data);
 
         self.profile_chart().update(context);
 
