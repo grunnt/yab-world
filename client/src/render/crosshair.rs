@@ -25,105 +25,31 @@ impl Crosshair {
         let view_uniform = program.get_uniform("View");
         let projection_uniform = program.get_uniform("Projection");
         let mut vertices = Vec::new();
-        let color = (0.0, 1.0, 1.0).into();
+        let color = (1.0, 1.0, 1.0).into();
         let normal = (0.0, 0.0, 0.0).into();
-        let scale = 1.0;
         let size = 10.0;
-        let size_double = size * 2.0;
         let lights = (1.0, 1.0, 0.0).into();
 
         vertices.push(Vertex {
-            position: (-size * scale, -size_double * scale, 0.0).into(),
+            position: (-size, 0.0, 0.0).into(),
             color,
             normal,
             lights,
         });
         vertices.push(Vertex {
-            position: (size * scale, -size_double * scale, 0.0).into(),
+            position: (size, 0.0, 0.0).into(),
             color,
             normal,
             lights,
         });
         vertices.push(Vertex {
-            position: (size * scale, -size_double * scale, 0.0).into(),
+            position: (0.0, -size, 0.0).into(),
             color,
             normal,
             lights,
         });
         vertices.push(Vertex {
-            position: (size_double * scale, -size * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (size_double * scale, -size * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (size_double * scale, size * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (size_double * scale, size * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (size * scale, size_double * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (size * scale, size_double * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (-size * scale, size_double * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (-size * scale, size_double * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (-size_double * scale, size * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (-size_double * scale, size * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (-size_double * scale, -size * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (-size_double * scale, -size * scale, 0.0).into(),
-            color,
-            normal,
-            lights,
-        });
-        vertices.push(Vertex {
-            position: (-size * scale, -size_double * scale, 0.0).into(),
+            position: (0.0, size, 0.0).into(),
             color,
             normal,
             lights,
