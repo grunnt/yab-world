@@ -20,7 +20,7 @@ The following optional arguments can be passed:
 - `new`: start the client & server in a new world (handy for quick iteration in development)
 - `continue`: start the client & server and continue the previous world (handy for quick iteration in development)
 
-If no command-line arguments are passed the client starts in the main menu. For joining a local server use IP address `127.1.1.1` instead of `localhost`.
+If no command-line arguments are passed the client starts in the main menu.
 
 ## Packing block textures
 
