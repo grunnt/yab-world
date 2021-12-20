@@ -4,5 +4,6 @@ use serde::{Deserialize, Serialize};
 pub enum GeneratorType {
     Flat,
     Water,
+    Alien,
     Default,
 }

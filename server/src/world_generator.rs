@@ -80,6 +80,7 @@ pub struct ColumnGenerator {
     hills_generator: HillsGenerator,
     flat_generator: FlatGenerator,
     water_generator: WaterWorldGenerator,
+    alien_generator: AlienGenerator,
 }
 
 impl ColumnGenerator {
@@ -88,6 +89,7 @@ impl ColumnGenerator {
             hills_generator: HillsGenerator::new(seed),
             flat_generator: FlatGenerator::new(32, 36),
             water_generator: WaterWorldGenerator::new(seed),
+            alien_generator: AlienGenerator::new(seed),
         }
     }
 
@@ -110,6 +112,7 @@ impl ColumnGenerator {
                 let blocks = match world_type {
                     GeneratorType::Flat => self.flat_generator.generate(x, y),
                     GeneratorType::Water => self.water_generator.generate(x, y),
+                    GeneratorType::Alien => self.alien_generator.generate(x, y),
                     GeneratorType::Default => self.hills_generator.generate(x, y),
                 };
                 for cz in 0..WORLD_HEIGHT_CHUNKS {

@@ -91,6 +91,7 @@ impl NewGameState {
                 "Default".to_string(),
                 "Flat".to_string(),
                 "Water".to_string(),
+                "Alien".to_string(),
             ])),
             CellAlignment::Fill,
         );
@@ -170,6 +171,7 @@ impl State<GameContext> for NewGameState {
                                 0 => GeneratorType::Default,
                                 1 => GeneratorType::Flat,
                                 2 => GeneratorType::Water,
+                                3 => GeneratorType::Alien,
                                 _ => panic!(
                                     "Unexpected value for world type selector: {}",
                                     selected_index

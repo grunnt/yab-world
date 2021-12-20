@@ -1,8 +1,10 @@
+mod alien_generator;
 mod flat_generator;
 mod hills_generator;
 mod noise_source;
 mod water_generator;
 
+pub use alien_generator::*;
 use common::block::Block;
 pub use flat_generator::*;
 pub use hills_generator::*;

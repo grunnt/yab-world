@@ -53,6 +53,7 @@ fn main() {
                     world_type = match world_type_str {
                         "flat" => GeneratorType::Flat,
                         "water" => GeneratorType::Water,
+                        "alien" => GeneratorType::Alien,
                         "default" => GeneratorType::Default,
                         _ => {
                             panic!("type argument needs a value: flat, water or default")
