@@ -43,9 +43,6 @@ pub struct GameContext {
     pub inventory: Inventory,
     pub selected_block: Block,
     pub player_id: Option<u8>,
-    pub energy: f32,
-    pub max_energy: f32,
-    pub charge_per_s: f32,
     pub players: Vec<PlayerData>,
 }
 
@@ -56,9 +53,6 @@ impl GameContext {
         GameContext {
             sound_high_beep,
             player_id: None,
-            energy: 0.0,
-            max_energy: 10.0,
-            charge_per_s: 2.0,
             block_registry: BlockRegistry::empty(),
             resource_registry: ResourceRegistry::empty(),
             particles: None,

@@ -1,6 +1,6 @@
 use crate::{
     block_select::BlockSelectState,
-    gui::{gui_renderer::GuiRenderer, Label, ProgressBar},
+    gui::{gui_renderer::GuiRenderer, Label},
     *,
 };
 use common::block::*;
@@ -15,11 +15,7 @@ use log::*;
 const POS_UPDATE_INTERVAL: f64 = 1.0 / 20.0;
 const PHYSICS_TIME_STEP: f32 = 0.02;
 const CAMERA_Z_OFFSET: f32 = 0.45;
-
 const MIN_JUMP_VELOCITY: f32 = 0.25;
-const AIR_JUMP_ENERGY: f32 = 2.5;
-const AIR_JUMP_VELOCITY: f32 = 0.5;
-
 const BLOCK_PLACE_TIME_S: f32 = 0.15;
 const BLOCK_REMOVE_TIME_S: f32 = 0.15;
 
@@ -38,7 +34,6 @@ pub struct InGameState {
     debug_label: WidgetId,
     resource_label: WidgetId,
     selected_label: WidgetId,
-    total_energy_bar: WidgetId,
     block_place_timer: f32,
     block_remove_timer: f32,
     profile_chart_id: WidgetId,
@@ -96,13 +91,6 @@ impl InGameState {
             Box::new(Label::new("".to_string())),
             CellAlignment::BottomRight,
         );
-        let total_energy_bar = gui.place(
-            gui.root_id(),
-            1,
-            4,
-            Box::new(ProgressBar::new(0.0, 1.0)),
-            CellAlignment::Fill,
-        );
 
         InGameState {
             buffer_col,
@@ -119,7 +107,6 @@ impl InGameState {
             debug_label,
             resource_label,
             selected_label,
-            total_energy_bar,
             block_remove_timer: 0.0,
             block_place_timer: 0.0,
             profile_chart_id,
@@ -156,11 +143,6 @@ impl InGameState {
                     let object = data.physics.get_object_mut(self.player_body);
                     if object.on_ground {
                         object.velocity.z = object.velocity.z.max(MIN_JUMP_VELOCITY);
-                    } else {
-                        if data.energy >= AIR_JUMP_ENERGY {
-                            object.velocity.z += object.velocity.z.max(AIR_JUMP_VELOCITY);
-                            data.energy -= AIR_JUMP_ENERGY;
-                        }
                     }
                 }
                 Key::Tab => {
@@ -647,23 +629,6 @@ impl State<GameContext> for InGameState {
         while self.delta_accumulator >= PHYSICS_TIME_STEP {
             data.step_physics();
             self.delta_accumulator -= PHYSICS_TIME_STEP;
-        }
-
-        // -------- Energy --------
-        if data.max_energy > 0.0 {
-            // Normal charging
-            if data.energy < data.max_energy {
-                data.energy += data.charge_per_s * delta;
-                if data.energy > data.max_energy {
-                    data.energy = data.max_energy;
-                }
-            }
-
-            // Update energy bar
-            self.gui.set_value(
-                &self.total_energy_bar,
-                GuiValue::Float(data.energy / data.max_energy),
-            );
         }
 
         let pos = data.physics.get_object_position(self.player_body).clone();
