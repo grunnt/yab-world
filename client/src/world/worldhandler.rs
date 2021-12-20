@@ -92,6 +92,7 @@ impl WorldHandler {
                                 ColumnStatus::Stored,
                                 chunks,
                             ));
+                            buffer.propagate_column_sunlight(col);
                         }
                         _ => {
                             panic!("Cannot handle {:?}", message);
@@ -111,7 +112,7 @@ impl WorldHandler {
                     for col in propagation_columns {
                         // Propagate light in all chunks of this column
                         for z in 0..WORLD_HEIGHT_CHUNKS {
-                            buffer.propagate_chunk_light(
+                            buffer.propagate_chunk_light_and_sunlight(
                                 ChunkPos::new(col.x, col.y, z as i16),
                                 &mut HashSet::new(),
                                 &block_registry_clone,
@@ -638,17 +639,7 @@ impl WorldHandler {
                 let x_rel = (wbx - chunk_pos.x * CHUNK_SIZE as i16) as usize;
                 let y_rel = (wby - chunk_pos.y * CHUNK_SIZE as i16) as usize;
                 let z_rel = (wbz - chunk_pos.z * CHUNK_SIZE as i16) as usize;
-                // debug!(
-                //     "setting block {} at {},{},{} - light {}, old block sunlight {}, was solid {}",
-                //     new_block.kind(),
-                //     wbx,
-                //     wby,
-                //     wbz,
-                //     new_block.get_light(),
-                //     old_block.get_sunlight(),
-                //     chunk.is_solid()
-                // );
-                // If a light block is removed, the propagated light should also be removed.
+                // If a light emitting block is removed, the propagated light should also be removed.
                 let old_block_light = self.block_registry.get(old_block.kind()).light;
                 if old_block_light > 0 || old_block.get_light() > 0 {
                     self.chunks.remove_block_and_light(
@@ -662,6 +653,19 @@ impl WorldHandler {
                 } else {
                     chunk.set_block(x_rel, y_rel, z_rel, new_block);
                 }
+                // Does the new block block existing sunlight? Then remove the propagated sunlight.
+                let old_block_sunlight = old_block.get_sunlight();
+                if new_block.is_opaque() && old_block_sunlight > 0 {
+                    self.chunks.remove_sunlight_if_needed(
+                        wbx,
+                        wby,
+                        wbz,
+                        old_block_sunlight,
+                        dirty_chunks,
+                    );
+                }
+                self.chunks
+                    .propagate_sunlight_if_needed(wbx, wby, wbz, dirty_chunks);
                 if new_block.get_light() > 0 {
                     // Propagate light from this block outward
                     self.chunks.propagate_light(wbx, wby, wbz, dirty_chunks);

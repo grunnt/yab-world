@@ -77,6 +77,7 @@ impl BlockMesher {
                 for z in 0..CHUNK_SIZE {
                     let block = chunk.get_block(x, y, z);
                     let light = block.get_light();
+                    let sunlight = block.get_sunlight();
                     if block.is_transparent() {
                         // There may be solid blocks next to this one that may need faces rendered
                         if x < CHUNK_SIZE - 1 {
@@ -96,6 +97,7 @@ impl BlockMesher {
                                     z as i16 + offset_z,
                                     self.texture(neighbour.kind(), FACE_XM),
                                     light,
+                                    sunlight,
                                     FACE_XP,
                                 );
                             }
@@ -117,6 +119,7 @@ impl BlockMesher {
                                     z as i16 + offset_z,
                                     self.texture(neighbour.kind(), FACE_XP),
                                     light,
+                                    sunlight,
                                     FACE_XM,
                                 );
                             }
@@ -138,6 +141,7 @@ impl BlockMesher {
                                     z as i16 + offset_z,
                                     self.texture(neighbour.kind(), FACE_YM),
                                     light,
+                                    sunlight,
                                     FACE_YP,
                                 );
                             }
@@ -159,6 +163,7 @@ impl BlockMesher {
                                     z as i16 + offset_z,
                                     self.texture(neighbour.kind(), FACE_YP),
                                     light,
+                                    sunlight,
                                     FACE_YM,
                                 );
                             }
@@ -180,6 +185,7 @@ impl BlockMesher {
                                     z as i16 + offset_z,
                                     self.texture(neighbour.kind(), FACE_ZM),
                                     light,
+                                    sunlight,
                                     FACE_ZP,
                                 );
                             }
@@ -201,6 +207,7 @@ impl BlockMesher {
                                     z as i16 + offset_z,
                                     self.texture(neighbour.kind(), FACE_ZP),
                                     light,
+                                    sunlight,
                                     FACE_ZM,
                                 );
                             }
@@ -218,6 +225,7 @@ impl BlockMesher {
                 if block.is_transparent() {
                     // There may be solid blocks next to this one that may need faces rendered
                     let light = block.get_light();
+                    let sunlight = block.get_sunlight();
                     let neighbour = xp.get_block(0, y, z);
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
@@ -234,6 +242,7 @@ impl BlockMesher {
                             z as i16 + offset_z,
                             self.texture(neighbour.kind(), FACE_XM),
                             light,
+                            sunlight,
                             FACE_XP,
                         );
                     }
@@ -249,6 +258,7 @@ impl BlockMesher {
                 if block.is_transparent() {
                     // There may be solid blocks next to this one that may need faces rendered
                     let light = block.get_light();
+                    let sunlight = block.get_sunlight();
                     let neighbour = xm.get_block(CHUNK_SIZE - 1, y, z);
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
@@ -265,6 +275,7 @@ impl BlockMesher {
                             z as i16 + offset_z,
                             self.texture(neighbour.kind(), FACE_XP),
                             light,
+                            sunlight,
                             FACE_XM,
                         );
                     }
@@ -280,6 +291,7 @@ impl BlockMesher {
                 if block.is_transparent() {
                     // There may be solid blocks next to this one that may need faces rendered
                     let light = block.get_light();
+                    let sunlight = block.get_sunlight();
                     let neighbour = yp.get_block(x, 0, z);
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
@@ -296,6 +308,7 @@ impl BlockMesher {
                             z as i16 + offset_z,
                             self.texture(neighbour.kind(), FACE_YM),
                             light,
+                            sunlight,
                             FACE_YP,
                         );
                     }
@@ -311,6 +324,7 @@ impl BlockMesher {
                 if block.is_transparent() {
                     // There may be solid blocks next to this one that may need faces rendered
                     let light = block.get_light();
+                    let sunlight = block.get_sunlight();
                     let neighbour = ym.get_block(x, CHUNK_SIZE - 1, z);
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
@@ -327,6 +341,7 @@ impl BlockMesher {
                             z as i16 + offset_z,
                             self.texture(neighbour.kind(), FACE_YP),
                             light,
+                            sunlight,
                             FACE_YM,
                         );
                     }
@@ -342,6 +357,7 @@ impl BlockMesher {
                 if block.is_transparent() {
                     // There may be solid blocks next to this one that may need faces rendered
                     let light = block.get_light();
+                    let sunlight = block.get_sunlight();
                     let neighbour = if let Some(chunk) = zp {
                         chunk.get_block(x, y, 0)
                     } else {
@@ -362,6 +378,7 @@ impl BlockMesher {
                             z as i16 + offset_z,
                             self.texture(neighbour.kind(), FACE_ZM),
                             light,
+                            sunlight,
                             FACE_ZP,
                         );
                     }
@@ -377,6 +394,7 @@ impl BlockMesher {
                 if block.is_transparent() {
                     // There may be solid blocks next to this one that may need faces rendered
                     let light = block.get_light();
+                    let sunlight = block.get_sunlight();
                     let neighbour = if let Some(chunk) = zm {
                         chunk.get_block(x, y, CHUNK_SIZE - 1)
                     } else {
@@ -397,6 +415,7 @@ impl BlockMesher {
                             z as i16 + offset_z,
                             self.texture(neighbour.kind(), FACE_ZP),
                             light,
+                            sunlight,
                             FACE_ZM,
                         );
                     }
@@ -415,6 +434,7 @@ impl BlockMesher {
         z: i16,
         texture_layer: f32,
         light: u8,
+        sunlight: u8,
         face: usize,
     ) {
         // Vertices of this face in clockwise order
@@ -434,6 +454,7 @@ impl BlockMesher {
             1.0,
             texture_layer,
             light,
+            sunlight,
             NORMALS[face],
         );
         let vertex1 = BlockVertex::new(
@@ -444,6 +465,7 @@ impl BlockMesher {
             0.0,
             texture_layer,
             light,
+            sunlight,
             NORMALS[face],
         );
         let vertex2 = BlockVertex::new(
@@ -454,6 +476,7 @@ impl BlockMesher {
             0.0,
             texture_layer,
             light,
+            sunlight,
             NORMALS[face],
         );
         let vertex3 = BlockVertex::new(
@@ -464,6 +487,7 @@ impl BlockMesher {
             1.0,
             texture_layer,
             light,
+            sunlight,
             NORMALS[face],
         );
         // Triangle 1

@@ -154,7 +154,7 @@ impl SerializeMessage<ClientMessage> for ClientMessage {
                 let wbx = i16::read_from(reader)?;
                 let wby = i16::read_from(reader)?;
                 let wbz = i16::read_from(reader)?;
-                let block = u16::read_from(reader)?;
+                let block = Block::read_from(reader)?;
                 let message = ClientMessage::SetBlock {
                     wbx,
                     wby,
@@ -444,7 +444,7 @@ impl SerializeMessage<ServerMessage> for ServerMessage {
                 let wbx = i16::read_from(reader)?;
                 let wby = i16::read_from(reader)?;
                 let wbz = i16::read_from(reader)?;
-                let block = u16::read_from(reader)?;
+                let block = Block::read_from(reader)?;
 
                 let message = ServerMessage::SetBlock {
                     wbx,

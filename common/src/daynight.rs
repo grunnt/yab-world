@@ -136,8 +136,8 @@ impl DayNight {
             sky_gradient,
             fog_gradient,
             ambient_gradient,
-            sunlight_strength: 0.75,
-            ambient_strength: 0.8,
+            sunlight_strength: 1.0,
+            ambient_strength: 0.1,
         }
     }
 

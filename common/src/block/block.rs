@@ -1,17 +1,17 @@
 use crate::block::blockregistry::*;
 
 // Air is a special case with ID 0
-pub const AIR_BLOCK: u16 = 0;
+pub const AIR_BLOCK: u32 = 0;
 // Solid (not passable) blocks have an ID from 256 or higher (this partially overlaps with translucent block IDs)
-pub const SOLID_MIN_ID: u16 = 256;
+pub const SOLID_MIN_ID: u32 = 256;
 // Translucent blocks have an ID from 1 to 511
-pub const TRANSPARENT_MAX_ID: u16 = 511;
+pub const TRANSPARENT_MAX_ID: u32 = 511;
 
-pub const LIGHT_BIT_MASK: u16 = 0xF000;
-// pub const FLAGS_BIT_MASK: u32 = 0x0000F000;
-pub const KIND_BIT_MASK: u16 = 0x0FFF;
+pub const LIGHT_BIT_MASK: u32 = 0xF0000000;
+pub const SUNLIGHT_BIT_MASK: u32 = 0x0F000000;
+pub const KIND_BIT_MASK: u32 = 0x00000FFF;
 
-pub type Block = u16;
+pub type Block = u32;
 
 pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
     fn kind(&self) -> Block;
@@ -61,7 +61,7 @@ pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
     fn lamp_block() -> Self;
 }
 
-impl BlockTrait for u16 {
+impl BlockTrait for u32 {
     fn kind(&self) -> Block {
         (self & KIND_BIT_MASK) as Block
     }
@@ -142,15 +142,27 @@ pub trait LightBlock: Copy + Clone + PartialEq + Eq {
     fn get_light(&self) -> u8;
 
     fn set_light(&mut self, light: u8);
+
+    fn get_sunlight(&self) -> u8;
+
+    fn set_sunlight(&mut self, light: u8);
 }
 
 impl LightBlock for Block {
     fn get_light(&self) -> u8 {
-        ((self & LIGHT_BIT_MASK) >> 12) as u8
+        ((self & LIGHT_BIT_MASK) >> 28) as u8
     }
 
     fn set_light(&mut self, light: u8) {
-        *self = (*self & !LIGHT_BIT_MASK) | ((light as Block) << 12);
+        *self = (*self & !LIGHT_BIT_MASK) | ((light as Block) << 28);
+    }
+
+    fn get_sunlight(&self) -> u8 {
+        ((self & SUNLIGHT_BIT_MASK) >> 24) as u8
+    }
+
+    fn set_sunlight(&mut self, light: u8) {
+        *self = (*self & !SUNLIGHT_BIT_MASK) | ((light as Block) << 24);
     }
 }
 
@@ -161,21 +173,22 @@ mod block_light_test {
 
     #[test]
     fn get_light() {
-        let block: Block = 0xF000;
+        let block: Block = 0xF0000000;
         assert_eq!(block.get_light(), 15);
     }
 
     #[test]
     fn set_get_light() {
-        let mut block: Block = 1;
+        let mut block: Block = Block::rock_block();
         assert_eq!(block.get_light(), 0);
-        block.set_light(10);
-        assert_eq!(block.get_light(), 10);
+        block.set_light(14);
+        block.set_sunlight(15);
+        assert_eq!(block.get_light(), 14);
+        assert_eq!(block.get_sunlight(), 15);
+        assert_eq!(block.kind(), Block::rock_block());
         block.set_light(7);
         assert_eq!(block.get_light(), 7);
-        block.set_light(15);
-        assert_eq!(block.get_light(), 15);
-        block.set_light(0);
-        assert_eq!(block.get_light(), 0);
+        assert_eq!(block.get_sunlight(), 15);
+        assert_eq!(block.kind(), Block::rock_block());
     }
 }

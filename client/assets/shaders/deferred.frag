@@ -71,7 +71,7 @@ void main()
 
     // Combine ambient and sunlight
     float lightLevel = pow(inLight.r, 2);
-    vec3 color = pow(ao, 2) * ((ambientLightColor + sunColor) + lightLevel) * inColor;
+    vec3 color = (ao * (ambientLightColor + sunColor) + lightLevel) * inColor;
 
     // Calculate fog
     float fogDistance = length(inFragPos);

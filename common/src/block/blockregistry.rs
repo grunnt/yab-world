@@ -13,18 +13,18 @@ pub const FACE_YM: usize = 3;
 pub const FACE_ZP: usize = 4;
 pub const FACE_ZM: usize = 5;
 
-pub const WATER_BLOCK: u16 = 1;
-pub const DIRT_BLOCK: u16 = 512;
-pub const GRASS_BLOCK: u16 = 513;
-pub const ROCK_BLOCK: u16 = 514;
-pub const SAND_BLOCK: u16 = 515;
-pub const SANDSTONE_BLOCK: u16 = 516;
-pub const WOOD_BLOCK: u16 = 517;
-pub const BEDROCK_BLOCK: u16 = 518;
-pub const LAMP_BLOCK: u16 = 519;
-pub const IRON_BLOCK: u16 = 520;
-pub const GOLD_BLOCK: u16 = 521;
-pub const ICE_BLOCK: u16 = 522;
+pub const WATER_BLOCK: u32 = 1;
+pub const DIRT_BLOCK: u32 = 512;
+pub const GRASS_BLOCK: u32 = 513;
+pub const ROCK_BLOCK: u32 = 514;
+pub const SAND_BLOCK: u32 = 515;
+pub const SANDSTONE_BLOCK: u32 = 516;
+pub const WOOD_BLOCK: u32 = 517;
+pub const BEDROCK_BLOCK: u32 = 518;
+pub const LAMP_BLOCK: u32 = 519;
+pub const IRON_BLOCK: u32 = 520;
+pub const GOLD_BLOCK: u32 = 521;
+pub const ICE_BLOCK: u32 = 522;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockDef {

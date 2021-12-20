@@ -32,7 +32,7 @@ void main()
     OUT.Normal = transpose(inverse(mat3(View * Model))) * unpackedNormal;
     
     // Unpack the light values
-    vec2 unpackedLights = vec2(float(Light & 15u) / 15.0, 1.0);
+    vec2 unpackedLights = vec2(float(Light & 15u) / 15.0, float((Light >> 4u) & 15u) / 15.0);
     OUT.Light = unpackedLights;
 
     gl_Position = Projection * viewPos;

@@ -377,7 +377,7 @@ impl InGameState {
                                 wbx,
                                 wby,
                                 wbz,
-                                block: u16::empty_block(),
+                                block: Block::empty_block(),
                             })
                             .unwrap();
                     }
