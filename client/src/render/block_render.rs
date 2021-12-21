@@ -256,6 +256,7 @@ impl BlockRenderer {
             gl.Disable(gl::CULL_FACE);
             gl.Enable(gl::DEPTH_TEST);
             gl.Enable(gl::BLEND);
+            gl.Enable(gl::FRAMEBUFFER_SRGB);
         }
         let mut vertex_count = self.triangle_count * 3;
         let mut mesh_count = self.mesh_count;
@@ -277,6 +278,9 @@ impl BlockRenderer {
             }
             vertex_count = vertex_count + mesh.vertex_count as usize;
             mesh_count = mesh_count + 1;
+        }
+        unsafe {
+            gl.Disable(gl::FRAMEBUFFER_SRGB);
         }
         self.triangle_count = vertex_count as usize / 3;
         self.mesh_count = mesh_count;

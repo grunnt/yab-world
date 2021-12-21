@@ -151,10 +151,12 @@ impl SkyDome {
             self.gl.Enable(gl::CULL_FACE);
             self.gl.Enable(gl::DEPTH_TEST);
             self.gl.Disable(gl::BLEND);
+            self.gl.Enable(gl::FRAMEBUFFER_SRGB);
         }
         self.vao.bind();
         unsafe {
             self.gl.DrawArrays(gl::TRIANGLES, 0, self.vertex_count);
+            self.gl.Disable(gl::FRAMEBUFFER_SRGB);
         }
     }
 }

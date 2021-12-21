@@ -140,6 +140,7 @@ impl Rendering {
             )
         };
 
+        // Actual rendering to screen is done in sRGB color space
         self.deferred.render_to_screen(
             &self.camera,
             context.video().width(),
