@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
 use client::{StartMode, YabClient};
 use common::{comms::DEFAULT_TCP_PORT, world_type::GeneratorType};

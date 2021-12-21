@@ -54,7 +54,7 @@ impl ObjectPlacer for TreePlacer {
                 }
                 if top_z < WORLD_HEIGHT_CHUNKS * CHUNK_SIZE - tree_height {
                     for z in top_z..top_z + tree_height {
-                        blocks[z] = Block::wood_block();
+                        blocks[z] = Block::log_block();
                     }
                 }
             }

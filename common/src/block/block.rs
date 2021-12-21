@@ -59,6 +59,8 @@ pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
     fn bedrock_block() -> Self;
 
     fn lamp_block() -> Self;
+
+    fn log_block() -> Self;
 }
 
 impl BlockTrait for u32 {
@@ -134,6 +136,10 @@ impl BlockTrait for u32 {
 
     fn ice_block() -> Self {
         ICE_BLOCK
+    }
+
+    fn log_block() -> Self {
+        LOG_BLOCK
     }
 }
 

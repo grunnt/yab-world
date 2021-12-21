@@ -20,11 +20,12 @@ pub const ROCK_BLOCK: u32 = 514;
 pub const SAND_BLOCK: u32 = 515;
 pub const SANDSTONE_BLOCK: u32 = 516;
 pub const WOOD_BLOCK: u32 = 517;
-pub const BEDROCK_BLOCK: u32 = 518;
-pub const LAMP_BLOCK: u32 = 519;
-pub const IRON_BLOCK: u32 = 520;
-pub const GOLD_BLOCK: u32 = 521;
-pub const ICE_BLOCK: u32 = 522;
+pub const LOG_BLOCK: u32 = 518;
+pub const BEDROCK_BLOCK: u32 = 519;
+pub const LAMP_BLOCK: u32 = 520;
+pub const IRON_BLOCK: u32 = 521;
+pub const GOLD_BLOCK: u32 = 522;
+pub const ICE_BLOCK: u32 = 523;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockDef {
@@ -219,6 +220,25 @@ impl BlockRegistry {
                 buildable: true,
                 resource_yield: vec![(0, 1)],
                 resource_cost: vec![(0, 2)],
+            },
+        );
+        blocks.insert(
+            LOG_BLOCK,
+            BlockDef {
+                name: "Log".to_string(),
+                color: ColorRGBu8::new(106, 82, 48),
+                textures: vec![
+                    "oak_log".to_string(),
+                    "oak_log".to_string(),
+                    "oak_log".to_string(),
+                    "oak_log".to_string(),
+                    "oak_log_top".to_string(),
+                    "oak_log_top".to_string(),
+                ],
+                light: 0,
+                buildable: false,
+                resource_yield: vec![(0, 2)],
+                resource_cost: vec![(0, 0)],
             },
         );
         blocks.insert(
