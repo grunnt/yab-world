@@ -16,8 +16,8 @@ const POS_UPDATE_INTERVAL: f64 = 1.0 / 20.0;
 const PHYSICS_TIME_STEP: f32 = 0.02;
 const CAMERA_Z_OFFSET: f32 = 0.45;
 const MIN_JUMP_VELOCITY: f32 = 0.25;
-const BLOCK_PLACE_TIME_S: f32 = 0.15;
-const BLOCK_REMOVE_TIME_S: f32 = 0.15;
+const BLOCK_PLACE_TIME_S: f32 = 0.25;
+const BLOCK_REMOVE_TIME_S: f32 = 0.5;
 
 pub struct InGameState {
     buffer_col: ChunkColumnPos,
@@ -380,7 +380,7 @@ impl State<GameContext> for InGameState {
             data.starting_position.x,
             data.starting_position.y,
             data.starting_position.z,
-            Vec3::new(0.75, 0.75, 0.9),
+            Vec3::new(0.75, 0.75, 1.75),
         );
 
         self.rendering = Some(Rendering::new(data, context));
