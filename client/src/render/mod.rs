@@ -23,6 +23,7 @@ pub struct Rendering {
     pub camera: PerspectiveCamera,
     underwater_color: Vec3,
     fog_distance: f32,
+    water_fog_distance: f32,
     pub render_lines: bool,
     fog_active: bool,
     crosshair: Crosshair,
@@ -54,8 +55,9 @@ impl Rendering {
                 0.01,
                 5000.0,
             ),
-            underwater_color: Vec3::new(0.05, 0.15, 0.35),
+            underwater_color: Vec3::new(0.005, 0.02, 0.2),
             fog_distance: CHUNK_SIZE as f32 * data.config.render_range_chunks as f32,
+            water_fog_distance: CHUNK_SIZE as f32 * 2.0,
             render_lines: false,
             fog_active: true,
             crosshair,
@@ -121,7 +123,7 @@ impl Rendering {
                 self.underwater_color * 0.5,
                 0.0,
                 if self.fog_active {
-                    self.fog_distance / 2.0
+                    self.water_fog_distance
                 } else {
                     1024.0
                 },

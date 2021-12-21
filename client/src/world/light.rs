@@ -94,7 +94,6 @@ impl LightHandler for ChunkBuffer {
         let mut sunlight_map = [[MAX_LIGHT_LEVEL as f32; CHUNK_SIZE]; CHUNK_SIZE];
         for lcz in (0..WORLD_HEIGHT_CHUNKS).rev() {
             let chunk = self.get_mut_chunk(col.x, col.y, lcz as i16).unwrap();
-            //self.get_mut_chunk_local_unchecked(lcx, lcy, lcz);
             assert!(chunk.is_initialized());
             if chunk.is_solid() {
                 let mut block = chunk.get_block(0, 0, 0);
@@ -120,7 +119,7 @@ impl LightHandler for ChunkBuffer {
                                 chunk.set_block_unchecked(x, y, z, block);
                                 has_light = true;
                                 if block.kind() == Block::water_block() {
-                                    sunlight_map[x][y] = sunlight_map[x][y] * 0.75;
+                                    sunlight_map[x][y] = sunlight_map[x][y] * 0.5;
                                 }
                             } else {
                                 sunlight_map[x][y] = 0.0;

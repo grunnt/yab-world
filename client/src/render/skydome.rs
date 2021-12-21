@@ -27,7 +27,6 @@ pub struct SkyDome {
     sky_color_uniform: Option<Uniform>,
     light_dir_uniform: Option<Uniform>,
     light_col_uniform: Option<Uniform>,
-    dither_texture: Option<Texture>,
 }
 
 impl SkyDome {
@@ -46,19 +45,6 @@ impl SkyDome {
         let sky_color_uniform = program.get_uniform("skyColor");
         let light_dir_uniform = program.get_uniform("sunLightDirection");
         let light_col_uniform = program.get_uniform("sunColor");
-        if let Some(uniform) = program.get_uniform("ditherTexture") {
-            uniform.set_uniform_1i(0);
-        }
-        let dither_texture = Some(
-            Texture::load(
-                &assets.assets_path("textures/bayer_dither.png"),
-                gl,
-                TextureFormat::RGBA8,
-                TextureWrap::Repeat,
-                TextureFilter::Nearest,
-            )
-            .unwrap(),
-        );
 
         // Currently model is a full sphere, we might change this to hemisphere for performance
         let (models, _) = tobj::load_obj(assets.assets_path("objects/skydome.obj"), true)
@@ -108,7 +94,6 @@ impl SkyDome {
             sky_color_uniform,
             light_dir_uniform,
             light_col_uniform,
-            dither_texture,
         }
     }
 
@@ -142,9 +127,6 @@ impl SkyDome {
         }
         if let Some(uniform) = &self.light_col_uniform {
             uniform.set_uniform_3f(sun_col);
-        }
-        if let Some(dither_texture) = &self.dither_texture {
-            dither_texture.bind_at(0);
         }
         self.vao.bind();
         unsafe {
