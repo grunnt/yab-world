@@ -4,6 +4,7 @@ pub mod superchunk;
 pub mod world_generator;
 pub mod world_store;
 pub mod generator;
+mod object_placer;
 
 extern crate nalgebra_glm as glm;
 
