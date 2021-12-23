@@ -1,7 +1,6 @@
 mod client;
 mod player_store;
 pub mod superchunk;
-pub mod world_generator;
 pub mod world_store;
 pub mod generator;
 mod object_placer;
@@ -26,8 +25,9 @@ use player_store::PlayerStore;
 use rand::Rng;
 use std::{thread::{sleep, Builder}};
 use std::time::{Duration, Instant};
-use world_generator::WorldGenerator;
 use world_store::WorldStore;
+
+use crate::generator::WorldGenerator;
 
 const SLEEP_DURATION: Duration = Duration::from_millis(10);
 const MAX_PLAYERS: usize = 16;

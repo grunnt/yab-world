@@ -1,16 +1,7 @@
-mod alien_generator;
-mod flat_generator;
-mod hills_generator;
+mod chunk_generator;
+mod generators;
 mod noise_source;
-mod water_generator;
+mod world_generator;
 
-pub use alien_generator::*;
-use common::block::Block;
-pub use flat_generator::*;
-pub use hills_generator::*;
 pub use noise_source::*;
-pub use water_generator::*;
-
-pub trait Generator {
-    fn generate(&mut self, x: i16, y: i16) -> Vec<Block>;
-}
+pub use world_generator::WorldGenerator;

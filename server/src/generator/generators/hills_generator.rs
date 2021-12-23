@@ -1,4 +1,5 @@
-use super::{Generator, NoiseSource2D, NoiseSource3D};
+use super::Generator;
+use crate::generator::{NoiseSource2D, NoiseSource3D};
 use common::{
     block::*,
     chunk::{CHUNK_SIZE, WORLD_HEIGHT_CHUNKS},

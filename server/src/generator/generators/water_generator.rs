@@ -1,4 +1,5 @@
-use super::*;
+use super::Generator;
+use crate::generator::NoiseSource2D;
 use common::block::*;
 use common::chunk::{CHUNK_SIZE, WORLD_HEIGHT_CHUNKS};
 use noise::*;

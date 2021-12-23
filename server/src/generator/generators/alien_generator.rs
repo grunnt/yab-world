@@ -1,9 +1,12 @@
-use super::{Generator, NoiseSource2D, NoiseSource3D};
 use common::{
     block::*,
     chunk::{CHUNK_SIZE, WORLD_HEIGHT_CHUNKS},
 };
 use noise::{Fbm, Perlin};
+
+use crate::generator::{NoiseSource2D, NoiseSource3D};
+
+use super::Generator;
 
 pub struct AlienGenerator {
     terrain_noise: NoiseSource3D<Fbm>,
