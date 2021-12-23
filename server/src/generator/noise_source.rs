@@ -35,6 +35,16 @@ where
         }
     }
 
+    pub fn new_value(seed: u32, min: f64, max: f64) -> NoiseSource2D<Value> {
+        NoiseSource2D {
+            noise: Value::new().set_seed(seed),
+            min,
+            max,
+            x_offset: 632.641,
+            y_offset: 12.692,
+        }
+    }
+
     pub fn get(&self, x: f64, y: f64, scale: f64) -> f64 {
         let noise = self
             .noise

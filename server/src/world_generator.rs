@@ -10,6 +10,13 @@ use log::*;
 use std::i16;
 use std::thread;
 
+#[derive(Clone, Copy)]
+pub struct GenerateMarker {
+    pub player_id: u8,
+    pub position: ChunkColumnPos,
+    pub chunk_range: usize,
+}
+
 pub struct WorldGenerator {
     pub worker_count: usize,
     colpos_tx: Sender<(GeneratorType, ChunkColumnPos)>,
@@ -34,7 +41,7 @@ impl WorldGenerator {
                     loop {
                         match colpos_rx.recv() {
                             Ok((gen_type, col)) => {
-                                let column = generator.get_column(gen_type, col);
+                                let column = generator.generate_column(gen_type, col);
                                 match column_tx.send((col, column)) {
                                     Err(e) => {
                                         debug!("generator {} shutting down: {}", id, e);
@@ -70,7 +77,6 @@ impl WorldGenerator {
         let col_opt = self.column_rx.try_recv();
         if col_opt.is_ok() {
             let c = col_opt.unwrap();
-            //  println!("Ready {:?}", c.0);
             Some(c)
         } else {
             None
@@ -97,7 +103,7 @@ impl ColumnGenerator {
         }
     }
 
-    fn get_column(&mut self, world_type: GeneratorType, col: ChunkColumnPos) -> Vec<Chunk> {
+    fn generate_column(&mut self, world_type: GeneratorType, col: ChunkColumnPos) -> Vec<Chunk> {
         let cwx = col.x * CHUNK_SIZE as i16;
         let cwy = col.y * CHUNK_SIZE as i16;
         // Create empty column first

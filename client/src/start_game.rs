@@ -235,7 +235,7 @@ impl State<GameContext> for StartGameState {
             StartGameStage::DownloadingChunks => {
                 let world = data.world.as_mut().unwrap();
 
-                if self.preload_count <= 0 && self.player_chunk_stored {
+                if self.preload_count <= 0 {
                     self.gui.set_value(
                         &self.progress_label,
                         GuiValue::String("Entering world".to_string()),
