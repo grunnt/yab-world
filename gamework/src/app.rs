@@ -32,7 +32,7 @@ impl App {
         let wb = WindowBuilder::new()
             .with_title(title)
             .with_resizable(resizable)
-            .with_min_inner_size(glutin::dpi::LogicalSize::new(800, 600))
+            .with_min_inner_size(glutin::dpi::LogicalSize::new(1024, 768))
             .with_drag_and_drop(false) // Needs to be disabled to work with audio library
             .with_inner_size(glutin::dpi::LogicalSize::new(width, height));
         let windowed_context = ContextBuilder::new()

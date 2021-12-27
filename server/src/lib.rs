@@ -4,6 +4,7 @@ pub mod superchunk;
 pub mod world_store;
 pub mod generator;
 mod object_placer;
+mod server_world_handler;
 
 extern crate nalgebra_glm as glm;
 
@@ -26,6 +27,7 @@ use rand::Rng;
 use std::{thread::{sleep, Builder}};
 use std::time::{Duration, Instant};
 use world_store::WorldStore;
+
 
 use crate::generator::WorldGenerator;
 
@@ -61,7 +63,7 @@ impl YabServer {
                 let mut player_store = PlayerStore::load(&world_folder);
                 let block_registry = BlockRegistry::new(&world_folder);
                 let resource_registry = ResourceRegistry::new(&world_folder);
-                let mut workers = WorldGenerator::new(num_cpus - 1, seed);
+                let mut generator = WorldGenerator::new(num_cpus - 1, seed);
                 let mut clients = Vec::new();
                 let mut chunks = ChunkBuffer::new();
                 let mut broadcast_to_all = Vec::new();
@@ -104,7 +106,7 @@ impl YabServer {
                                 ColumnStatus::Requested,
                                 Vec::new(),
                             ));
-                            workers.generate(world_type, col);
+                            generator.generate(world_type, col);
                             warmup_counter += 1;
                         }
                     }
@@ -112,7 +114,7 @@ impl YabServer {
                 // Wait until warmup completes
                 while warmup_counter > 0 {
                     sleep(Duration::from_millis(10));
-                    if let Some((col, new_chunks)) = workers.try_receive() {
+                    if let Some((col, new_chunks)) = generator.try_receive() {
                         if let Some(column) = chunks.get_mut_column(col.x, col.y) {
                             column.set_status(ColumnStatus::Stored);
                             column.chunks = new_chunks;
@@ -275,7 +277,7 @@ impl YabServer {
                                                 ColumnStatus::Requested,
                                                 Vec::new(),
                                             ));
-                                            workers.generate(world_type, col);
+                                            generator.generate(world_type, col);
                                         }
                                     }
                                 }
@@ -489,7 +491,7 @@ impl YabServer {
 
                     // Handle world generator output
                     generator_profile.start();
-                    if let Some((col, new_chunks)) = workers.try_receive() {
+                    if let Some((col, new_chunks)) = generator.try_receive() {
                         if let Some(column) = chunks.get_mut_column(col.x, col.y) {
                             column.set_status(ColumnStatus::Stored);
                             column.chunks = new_chunks;

@@ -96,7 +96,7 @@ impl YabClient {
             }
         };
 
-        App::run("YAB-World", 900, 600, true, 3, 3, state, &assets, data);
+        App::run("YAB-World", 1024, 768, true, 3, 3, state, &assets, data);
 
         info!("Exited");
 
