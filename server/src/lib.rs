@@ -1,35 +1,31 @@
 mod client;
-mod player_store;
-pub mod superchunk;
-pub mod world_store;
 pub mod generator;
 mod object_placer;
+mod player_store;
 mod server_world_handler;
+pub mod superchunk;
+pub mod world_store;
 
 extern crate nalgebra_glm as glm;
 
-use chunk_buffer::ChunkBuffer;
 use client::*;
 use common::world_definition::WorldList;
 use common::world_type::GeneratorType;
-use common::{block::*, daynight::DayNight, resource::ResourceRegistry};
-use gamework::profile::Profile;
 use common::{block::BlockRegistry, comms::*};
+use common::{block::*, daynight::DayNight, resource::ResourceRegistry};
 use common::{chunk::*, player::PlayerData};
 use crossbeam::channel::*;
 use crossbeam::unbounded;
 use floating_duration::TimeAsFloat;
+use gamework::profile::Profile;
 use glm::Vec3;
 use log::*;
-use num_cpus;
 use player_store::PlayerStore;
 use rand::Rng;
-use std::{thread::{sleep, Builder}};
+use std::thread::{sleep, Builder};
 use std::time::{Duration, Instant};
-use world_store::WorldStore;
 
-
-use crate::generator::WorldGenerator;
+use crate::server_world_handler::ServerWorldHandler;
 
 const SLEEP_DURATION: Duration = Duration::from_millis(10);
 const MAX_PLAYERS: usize = 16;
@@ -55,78 +51,39 @@ impl YabServer {
         let handle = Builder::new()
             .name("yab-world-server".to_string())
             .spawn(move || {
-                let num_cpus = num_cpus::get();
                 let world_list = WorldList::new();
                 let world_folder = world_list.get_world_path(seed);
-                let mut world_store = WorldStore::new(&world_folder, seed, description.as_str(), world_type);
-                let world_type = world_store.world_def().world_type;
+                let mut world = if world_folder.exists() {
+                    ServerWorldHandler::load(seed)
+                } else {
+                    ServerWorldHandler::new(seed, description.as_str(), world_type)
+                };
                 let mut player_store = PlayerStore::load(&world_folder);
                 let block_registry = BlockRegistry::new(&world_folder);
                 let resource_registry = ResourceRegistry::new(&world_folder);
-                let mut generator = WorldGenerator::new(num_cpus - 1, seed);
                 let mut clients = Vec::new();
-                let mut chunks = ChunkBuffer::new();
                 let mut broadcast_to_all = Vec::new();
                 let mut loop_profile = Profile::new(1);
                 let mut client_profile = Profile::new(1);
                 let mut generator_profile = Profile::new(1);
-                let mut save_profile = Profile::new(1);
+                let mut update_profile = Profile::new(1);
                 let mut last_message = Instant::now();
                 let mut time = Instant::now();
                 let mut delta_accumulator = 0.0;
                 let mut daynight = DayNight::new(10.0 * 60.0);
-                daynight.set_time(world_store.world_def().gametime);
+                daynight.set_time(world.time_on_start());
                 let mut rng = rand::thread_rng();
                 debug!("World time is {}", daynight.get_time());
 
-                // Server warmup: prepare radius of chunks around starting area
+                // Set a marker for the spawn area, so that chunks there will be preloaded
                 let starting_chunk_col = ChunkColumnPos::new(REGION_SIZE_BLOCKS / CHUNK_SIZE as i16 / 2, REGION_SIZE_BLOCKS / CHUNK_SIZE as i16 / 2);
-                let startup_chunk_radius = 2;
+                let startup_chunk_range = 16;
                 info!(
-                    "Warming up server with {} radius around {:?}",
-                    startup_chunk_radius, starting_chunk_col
+                    "Preparing spawn area with {} radius around {:?}",
+                    startup_chunk_range, starting_chunk_col
                 );
-
-                // Send work to the generators
-                let mut warmup_counter = 0;
-                for dx in -startup_chunk_radius..startup_chunk_radius + 1 {
-                    for dy in -startup_chunk_radius..startup_chunk_radius + 1 {
-                        let col = ChunkColumnPos::new(starting_chunk_col.x + dx, starting_chunk_col.y + dy);
-                        // See if we can load the chunk column first
-                        if let Some(column) = world_store.load_column(col) {
-                            chunks.store_column(ChunkColumn::new(
-                                col,
-                                ColumnStatus::Stored,
-                                column,
-                            ));
-                        } else {
-                            // Otherwise generate a new column
-                            chunks.store_column(ChunkColumn::new(
-                                col,
-                                ColumnStatus::Requested,
-                                Vec::new(),
-                            ));
-                            generator.generate(world_type, col);
-                            warmup_counter += 1;
-                        }
-                    }
-                }
-                // Wait until warmup completes
-                while warmup_counter > 0 {
-                    sleep(Duration::from_millis(10));
-                    if let Some((col, new_chunks)) = generator.try_receive() {
-                        if let Some(column) = chunks.get_mut_column(col.x, col.y) {
-                            column.set_status(ColumnStatus::Stored);
-                            column.chunks = new_chunks;
-                            world_store.enqueue_column_save(col, &column.chunks);
-                            warmup_counter -= 1;
-                        } else {
-                            panic!("Generated column not in cache: {:?}", col);
-                        }
-                    }
-                }
-                info!("Server warmup complete.");
-
+                world.prepare_spawn_area(starting_chunk_col, startup_chunk_range);
+                info!("Spawn area prepared, starting main server loop");
                 loop {
                     loop_profile.start();
 
@@ -145,6 +102,7 @@ impl YabServer {
                             connection.disconnect();
                         }
                     }
+
                     // Handle client messages
                     let mut signed_in_player_ids = Vec::new();
                     for client in &mut clients {
@@ -174,7 +132,7 @@ impl YabServer {
                                         let spawn_range = CHUNK_SIZE as f32 * 0.25;
                                         client.data.x = REGION_SIZE_BLOCKS as f32 / 2.0 + rng.gen_range(-spawn_range, spawn_range);
                                         client.data.y = REGION_SIZE_BLOCKS as f32 / 2.0 + rng.gen_range(-spawn_range, spawn_range);
-                                        client.data.z = chunks
+                                        client.data.z = world
                                             .get_top_z(client.data.x as i16, client.data.y as i16)
                                             as f32
                                             + 3.0;
@@ -248,36 +206,13 @@ impl YabServer {
                                     for col in columns {
                                         // Subscribe to column to receive future changes
                                         client.subscribe_to(col);
-                                        // See if we can load the chunk column first
-                                        if let Some(column) = world_store.load_column(col) {
-                                            chunks.store_column(ChunkColumn::new(
-                                                col,
-                                                ColumnStatus::Stored,
-                                                column,
-                                            ));
-                                        }
-                                        // Get the column or generate a new one
-                                        if let Some(column) = chunks.get_column(col.x, col.y) {
-                                            if column.is_stored() {
-                                                // Use run-length encoding to save bandwidth
-                                                let mut block_data = Vec::new();
-                                                for chunk in &column.chunks {
-                                                    let mut bytes = Vec::new();
-                                                    chunk.blocks.rle_encode_to(&mut bytes).unwrap();
-                                                    block_data.push(bytes);
-                                                }
-                                                client.connection.send(
-                                                    ServerMessage::ChunkColumn { col, block_data },
-                                                );
-                                            }
+                                        if let Some(block_data) = world.try_clone_stored_column(col) {
+                                            // If it is available, send immediately
+                                            client.connection.send(
+                                                ServerMessage::ChunkColumn { col, block_data },
+                                            );
                                         } else {
-                                            // Generate this column
-                                            chunks.store_column(ChunkColumn::new(
-                                                col,
-                                                ColumnStatus::Requested,
-                                                Vec::new(),
-                                            ));
-                                            generator.generate(world_type, col);
+                                            world.place_generate_request(col);
                                         }
                                     }
                                 }
@@ -286,6 +221,9 @@ impl YabServer {
                                         continue;
                                     }
                                     client.unsubscribe_from_set(&columns);
+                                    for col in columns {
+                                        world.retract_generate_request(col);
+                                    }
                                 }
                                 ClientMessage::SetBlock {
                                     wbx,
@@ -300,7 +238,7 @@ impl YabServer {
                                     let mut allowed = true;
                                     let store_inventory = &mut player_store.get_mut_player(&client.data.username).unwrap().inventory;
                                     if block.is_empty() {
-                                        let old_block = chunks.get_block(wbx, wby, wbz);
+                                        let old_block = world.get_block(wbx, wby, wbz);
                                         let block_def = block_registry.get(old_block);
                                         for (resource_type, count) in &block_def.resource_yield {
                                             client.data.inventory.add(*resource_type, *count);
@@ -323,30 +261,13 @@ impl YabServer {
                                         }
                                     }
                                     if allowed {
-                                        
-                                        // Now place the new block (which may be empty)
-                                        let cp = ChunkPos::from_world_pos(Vec3::new(
-                                            wbx as f32, wby as f32, wbz as f32,
-                                        ));
-                                        if cp.z >= 0 && cp.z < WORLD_HEIGHT_CHUNKS as i16 {
-                                            let col = ChunkColumnPos::from_chunk_pos(cp);
-                                            if let Some(column) = chunks.get_mut_column(col.x, col.y) {
-                                                let chunk = &mut column.chunks[cp.z as usize];
-                                                chunk.set_block(
-                                                    (wbx - cp.x * CHUNK_SIZE as i16) as usize,
-                                                    (wby - cp.y * CHUNK_SIZE as i16) as usize,
-                                                    (wbz - cp.z * CHUNK_SIZE as i16) as usize,
-                                                    block,
-                                                );
-                                                broadcast_to_all.push(ServerMessage::SetBlock {
-                                                    wbx,
-                                                    wby,
-                                                    wbz,
-                                                    block,
-                                                });
-                                                world_store.enqueue_chunk_save(&chunk);
-                                            }
-                                        }
+                                        world.set_block(wbx, wby, wbz, block);
+                                        broadcast_to_all.push(ServerMessage::SetBlock {
+                                            wbx,
+                                            wby,
+                                            wbz,
+                                            block,
+                                        });
                                     }
                                 }
                             }
@@ -403,7 +324,7 @@ impl YabServer {
                                     if !broadcast_target.is_signed_in() {
                                         continue;
                                     }
-                                    if broadcast_target
+                                      if broadcast_target
                                         .is_subscribed_to(ChunkColumnPos::from_chunk_pos(cp))
                                     {
                                         broadcast_target.connection.send(ServerMessage::SetBlock {
@@ -491,36 +412,20 @@ impl YabServer {
 
                     // Handle world generator output
                     generator_profile.start();
-                    if let Some((col, new_chunks)) = generator.try_receive() {
-                        if let Some(column) = chunks.get_mut_column(col.x, col.y) {
-                            column.set_status(ColumnStatus::Stored);
-                            column.chunks = new_chunks;
-                            for client in &mut clients {
-                                if !client.is_signed_in() {
-                                    continue;
-                                }
-                                if client.is_subscribed_to(col) {
-                                    // Use run-length encoding to save bandwidth
-                                    let mut block_data = Vec::new();
-                                    for chunk in &column.chunks {
-                                        let mut bytes = Vec::new();
-                                        chunk.blocks.rle_encode_to(&mut bytes).unwrap();
-                                        block_data.push(bytes);
-                                    }
-                                    client
-                                        .connection
-                                        .send(ServerMessage::ChunkColumn { col, block_data });
-                                } else {
-                                    warn!("Client not subscribed to column {:?}", col);
-                                }
+                    if let Some((col, block_data)) = world.try_get_generated_column(true){
+                        for client in &mut clients {
+                            if !client.is_signed_in() {
+                                continue;
                             }
-                            world_store.enqueue_column_save(col, &column.chunks);
-                        } else {
-                            warn!("Generated column not in cache: {:?}", col);
+                            if client.is_subscribed_to(col) {
+                                client
+                                    .connection
+                                    .send(ServerMessage::ChunkColumn { col, block_data: block_data.clone() });
+                            }
                         }
                     }
-
                     generator_profile.end();
+
                     // Filter out closed clients
                     clients.retain(|c| {
                         if !c.connection.connected {
@@ -532,10 +437,10 @@ impl YabServer {
                         c.connection.connected
                     });
 
-                    save_profile.start();
-                    world_store.save_world_if_needed(false, daynight.get_time());
+                    update_profile.start();
+                    world.update( daynight.get_time());
                     player_store.save_if_needed(false);
-                    save_profile.end();
+                    update_profile.end();
 
                     // Sleep for a little if there is nothing to do to reduce CPU usage
                     if clients.is_empty() {
@@ -548,18 +453,18 @@ impl YabServer {
                         loop_profile.frame();
                         client_profile.frame();
                         generator_profile.frame();
-                        save_profile.frame();
-                        // debug!(
-                        //     "Loop {}/{} client {}/{} generator {}/{} save {}/{}",
-                        //     loop_profile.avg_duration_ms(),
-                        //     loop_profile.max_duration_ms(),
-                        //     client_profile.avg_duration_ms(),
-                        //     client_profile.max_duration_ms(),
-                        //     generator_profile.avg_duration_ms(),
-                        //     generator_profile.max_duration_ms(),
-                        //     save_profile.avg_duration_ms(),
-                        //     save_profile.max_duration_ms()
-                        // );
+                        update_profile.frame();
+                        debug!(
+                            "Loop {}/{} client {}/{} generator {}/{} update {}/{}",
+                            loop_profile.avg_ms,
+                            loop_profile.max_ms,
+                            client_profile.avg_ms,
+                            client_profile.max_ms,
+                            generator_profile.avg_ms,
+                            generator_profile.max_ms,
+                            update_profile.avg_ms,
+                            update_profile.max_ms
+                        );
                         last_message = Instant::now();
                     }
 
@@ -570,7 +475,7 @@ impl YabServer {
                                 client.connection.disconnect();
                             }
                             server_comms.shutdown();
-                            world_store.save_world_if_needed(true, daynight.get_time());
+                            world.save(daynight.get_time());
                             player_store.save_if_needed(true);
                             break;
                         }

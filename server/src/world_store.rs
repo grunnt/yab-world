@@ -4,9 +4,9 @@ use common::comms::*;
 use common::world_definition::*;
 use common::world_type::GeneratorType;
 use log::*;
+use std::io::Cursor;
 use std::time::{Duration, Instant};
 use std::{collections::HashMap, path::PathBuf};
-use std::{io::Cursor, path::Path};
 
 const MAX_SC_CACHE_DURATION: Duration = Duration::from_secs(60 * 5);
 const MIN_SAVE_INTERVAL: Duration = Duration::from_millis(5000);
@@ -15,25 +15,36 @@ pub struct WorldStore {
     last_save: Instant,
     sc_cache: HashMap<String, SuperChunk>,
     save_queue: HashMap<ChunkColumnPos, Vec<Vec<u8>>>,
-    folder_path: PathBuf,
+    world_folder: PathBuf,
     world_def: WorldDef,
 }
 
 impl WorldStore {
-    pub fn new(
-        folder_path: &Path,
-        seed: u32,
-        description: &str,
-        world_type: GeneratorType,
-    ) -> WorldStore {
+    pub fn new(seed: u32, description: &str, world_type: GeneratorType) -> Self {
         let world_list = WorldList::new();
-        let world_def = world_list.prepare_world(seed, description, world_type);
+        let world_folder = world_list.get_world_path(seed);
         WorldStore {
             last_save: Instant::now(),
             sc_cache: HashMap::new(),
             save_queue: HashMap::new(),
-            folder_path: folder_path.into(),
-            world_def,
+            world_folder: world_folder.into(),
+            world_def: world_list.create_new_world(seed, description, world_type),
+        }
+    }
+
+    pub fn load(seed: u32) -> Option<Self> {
+        let world_list = WorldList::new();
+        let world_folder = world_list.get_world_path(seed);
+        if let Some(world_def) = world_list.try_load_world(seed) {
+            Some(WorldStore {
+                last_save: Instant::now(),
+                sc_cache: HashMap::new(),
+                save_queue: HashMap::new(),
+                world_folder: world_folder.into(),
+                world_def,
+            })
+        } else {
+            None
         }
     }
 
@@ -80,7 +91,7 @@ impl WorldStore {
         let in_cache = self.sc_cache.contains_key(&sc_filename);
         if !in_cache {
             // Not in the cache, is it on the disk?
-            let sc_path = self.folder_path.join(format!("{}.chk", sc_filename));
+            let sc_path = self.world_folder.join(format!("{}.chk", sc_filename));
             if sc_path.exists() {
                 let sc = SuperChunk::load(&sc_path);
                 self.sc_cache.insert(sc_filename.clone(), sc);
@@ -126,7 +137,7 @@ impl WorldStore {
 
         self.world_def.gametime = game_time;
         self.world_def.timestamp = now_ms();
-        self.world_def.save(&self.folder_path.join(WORLD_DEF_FILE));
+        self.world_def.save(&self.world_folder.join(WORLD_DEF_FILE));
 
         // Group chunks by superchunk
         let mut c_per_sc: HashMap<String, Vec<ChunkColumnPos>> = HashMap::new();
@@ -139,8 +150,8 @@ impl WorldStore {
 
         // Now get each superchunk in turn and save the chunk data
         for (sc_filename, cp_list) in c_per_sc {
-            let sc_path = self.folder_path.join(format!("{}.chk", sc_filename));
-            let new_sc_path = self.folder_path.join(format!("{}.new", sc_filename));
+            let sc_path = self.world_folder.join(format!("{}.chk", sc_filename));
+            let new_sc_path = self.world_folder.join(format!("{}.new", sc_filename));
             if self.sc_cache.contains_key(&sc_filename) {
                 // Get from superchunk cache
                 let mut sc = self.sc_cache.get_mut(&sc_filename).unwrap();

@@ -200,7 +200,7 @@ impl WorldHandler {
 
         Ok(WorldHandler {
             render_range,
-            prio_render_range: 3,
+            prio_render_range: 4,
             center_col: starting_column,
             chunks,
             column_rx,

@@ -50,7 +50,7 @@ impl WorldList {
             .join(PathBuf::from(format!("world_{}", seed)))
     }
 
-    pub fn prepare_world(
+    pub fn create_new_world(
         &self,
         seed: u32,
         description: &str,
@@ -58,27 +58,34 @@ impl WorldList {
     ) -> WorldDef {
         let world_path = self.get_world_path(seed);
         if world_path.exists() {
-            info!("Updating existing world: {}", world_path.to_str().unwrap());
-        } else {
-            info!("Creating new world: {}", world_path.to_str().unwrap());
-            fs::create_dir_all(&world_path).unwrap();
+            panic!("World already exists at {}", world_path.to_str().unwrap());
         }
+        fs::create_dir_all(&world_path).unwrap();
         const VERSION: &'static str = env!("CARGO_PKG_VERSION");
         let world_info_file = world_path.join(WORLD_DEF_FILE);
-        let world = if let Some(world_def) = WorldDef::load(&world_info_file) {
-            world_def
-        } else {
-            WorldDef {
-                seed,
-                world_type,
-                description: description.to_string(),
-                version: VERSION.to_string(),
-                timestamp: now_ms(),
-                gametime: 0.3, // Early morning
-            }
+        let world = WorldDef {
+            seed,
+            world_type,
+            description: description.to_string(),
+            version: VERSION.to_string(),
+            timestamp: now_ms(),
+            gametime: 0.3, // Early morning
         };
         world.save(&world_info_file);
         world
+    }
+
+    pub fn try_load_world(&self, seed: u32) -> Option<WorldDef> {
+        let world_path = self.get_world_path(seed);
+        if !world_path.exists() {
+            warn!("World not found at: {}", world_path.to_str().unwrap());
+            return None;
+        }
+        let world_info_file = world_path.join(WORLD_DEF_FILE);
+        let mut world = WorldDef::load(&world_info_file).unwrap();
+        world.version = env!("CARGO_PKG_VERSION").to_string();
+        world.save(&world_info_file);
+        Some(world)
     }
 }
 

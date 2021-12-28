@@ -7,22 +7,16 @@ use std::thread;
 
 use crate::generator::chunk_generator::ColumnGenerator;
 
-#[derive(Clone, Copy)]
-pub struct GenerateMarker {
-    pub player_id: u8,
-    pub position: ChunkColumnPos,
-    pub chunk_range: usize,
-}
-
 pub struct WorldGenerator {
     pub worker_count: usize,
-    colpos_tx: Sender<(GeneratorType, ChunkColumnPos)>,
+    colpos_tx: Sender<ChunkColumnPos>,
     column_rx: Receiver<(ChunkColumnPos, Vec<Chunk>)>,
 }
 
 impl WorldGenerator {
-    pub fn new(worker_count: usize, seed: u32) -> WorldGenerator {
+    pub fn new(seed: u32, world_type: GeneratorType) -> WorldGenerator {
         // let seed = 1234;
+        let worker_count = num_cpus::get() - 1;
         info!("Initializing {} generator workers", worker_count);
         // Start chunk column generator threads
         let (colpos_tx, colpos_rx) = unbounded();
@@ -37,8 +31,8 @@ impl WorldGenerator {
                     info!("Starting generator {}", id);
                     loop {
                         match colpos_rx.recv() {
-                            Ok((gen_type, col)) => {
-                                let column = generator.generate_column(gen_type, col);
+                            Ok(col) => {
+                                let column = generator.generate_column(world_type, col);
                                 match column_tx.send((col, column)) {
                                     Err(e) => {
                                         debug!("generator {} shutting down: {}", id, e);
@@ -64,9 +58,8 @@ impl WorldGenerator {
     }
 
     /// Place new generator work in queue
-    pub fn generate(&mut self, world_type: GeneratorType, col: ChunkColumnPos) {
-        //  println!("Generate {:?}", col);
-        self.colpos_tx.send((world_type, col)).unwrap();
+    pub fn generate(&mut self, col: ChunkColumnPos) {
+        self.colpos_tx.send(col).unwrap();
     }
 
     // Receive newly generated columns
