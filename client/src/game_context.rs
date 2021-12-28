@@ -21,6 +21,9 @@ pub struct GameContext {
     pub dig_iron_emitter: Option<EmitterDef>,
     pub dig_gold_emitter: Option<EmitterDef>,
     pub dig_explosion_emitter: Option<EmitterDef>,
+    pub dig_beam_emitter_handle: EmitterHandle,
+    pub player_position_handle: ParticlePositionHandle,
+    pub player_target_handle: ParticlePositionHandle,
     pub sound_high_beep: AudioSource,
     pub block_registry: BlockRegistry,
     pub resource_registry: ResourceRegistry,
@@ -60,6 +63,9 @@ impl GameContext {
             dig_iron_emitter: None,
             dig_gold_emitter: None,
             dig_explosion_emitter: None,
+            dig_beam_emitter_handle: 0,
+            player_position_handle: 0,
+            player_target_handle: 0,
             seed: 0,
             description: "".to_string(),
             server_address: None,
@@ -140,11 +146,18 @@ impl GameContext {
         } else {
             self.dig_common_emitter.as_ref().unwrap().clone()
         };
-        self.particles_mut()
-            .emitter(block_position, ParticleTarget::Player, def);
+        let player_position_handle = self.player_position_handle;
+        self.particles_mut().emitter(
+            ParticlePosition::Fixed(block_position),
+            ParticlePosition::Handle(player_position_handle),
+            def,
+        );
         let expl_def = self.dig_explosion_emitter.as_ref().unwrap().clone();
-        self.particles_mut()
-            .emitter(block_position, ParticleTarget::None, expl_def);
+        self.particles_mut().emitter(
+            ParticlePosition::Fixed(block_position),
+            ParticlePosition::None,
+            expl_def,
+        );
     }
 
     fn particle(&self, name: &str) -> f32 {
@@ -178,6 +191,8 @@ impl SharedContext for GameContext {
             context.assets(),
             texture_array,
         ));
+        self.player_position_handle = self.particles_mut().new_position_handle();
+        self.player_target_handle = self.particles_mut().new_position_handle();
         self.dig_common_emitter = Some(EmitterDef {
             pitch: 0.0,
             yaw: 0.0,
@@ -242,5 +257,26 @@ impl SharedContext for GameContext {
             velocity: Range::new(0.5, 1.5),
             texture_layers: vec![self.particle("spark")],
         });
+        let beam_emitter_def = EmitterDef {
+            pitch: 0.0,
+            yaw: 0.0,
+            spread_angle: 0.0,
+            delay: 0.0,
+            duration: 0.0,
+            continuous: true,
+            particle_interval_s: 0.001,
+            start_area: None,
+            size: Range::new(0.01, 0.02),
+            life: Range::new(0.1, 0.2),
+            velocity: Range::new(20.0, 50.0),
+            texture_layers: vec![self.particle("spark")],
+        };
+        let player_position_handle = self.player_position_handle;
+        let player_target_handle = self.player_target_handle;
+        self.dig_beam_emitter_handle = self.particles_mut().emitter(
+            ParticlePosition::Handle(player_position_handle),
+            ParticlePosition::Handle(player_target_handle),
+            beam_emitter_def,
+        );
     }
 }

@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+
 use super::*;
 use crate::*;
 use nalgebra_glm::{Mat4, Vec3};
 use rand::{prelude::ThreadRng, Rng};
+
+pub type EmitterHandle = usize;
 
 pub struct ParticleSystem {
     texture: TextureArray,
@@ -14,7 +18,10 @@ pub struct ParticleSystem {
     vao: VertexArray,
     vertices: Vec<ParticleVertex>,
     particles: Vec<Particle>,
-    emitters: Vec<Emitter>,
+    emitters: HashMap<EmitterHandle, Emitter>,
+    next_emitter_handle: EmitterHandle,
+    positions: HashMap<ParticlePositionHandle, Vec3>,
+    next_particle_position_handle: ParticlePositionHandle,
     rng: ThreadRng,
     last_id: usize,
 }
@@ -53,31 +60,62 @@ impl ParticleSystem {
             vertices: Vec::new(),
             texture,
             particles: Vec::new(),
-            emitters: Vec::new(),
+            emitters: HashMap::new(),
+            next_emitter_handle: 1,
+            positions: HashMap::new(),
+            next_particle_position_handle: 1,
             rng: rand::thread_rng(),
             last_id: 0,
         }
     }
 
-    pub fn emitter(&mut self, position: Vec3, target: ParticleTarget, definition: EmitterDef) {
+    pub fn emitter(
+        &mut self,
+        position: ParticlePosition,
+        target: ParticlePosition,
+        definition: EmitterDef,
+    ) -> EmitterHandle {
         let life_time_s = definition.duration;
         let emitter = Emitter {
+            active: true,
             position,
             target,
             definition,
             accumulated_s: 0.0,
             life_time_s,
         };
-        self.emitters.push(emitter);
+        let handle = self.next_emitter_handle;
+        self.next_emitter_handle += 1;
+        self.emitters.insert(handle, emitter);
+        handle
     }
 
-    pub fn update(&mut self, delta_s: f32, player_position: Vec3) {
+    pub fn emitter_mut(&mut self, handle: EmitterHandle) -> Option<&mut Emitter> {
+        self.emitters.get_mut(&handle)
+    }
+
+    pub fn new_position_handle(&mut self) -> ParticlePositionHandle {
+        let handle = self.next_particle_position_handle;
+        self.next_particle_position_handle += 1;
+        self.positions.insert(handle, Vec3::zeros());
+        handle
+    }
+
+    pub fn update_position_handle(&mut self, handle: ParticlePositionHandle, new_position: Vec3) {
+        self.positions.insert(handle, new_position);
+    }
+
+    pub fn remove_position_handle(&mut self, handle: ParticlePositionHandle) {
+        self.positions.remove(&handle);
+    }
+
+    pub fn update(&mut self, delta_s: f32) {
         // Remove inactive particles
         self.particles.retain(|p| p.lifetime > 0.0);
 
         // Emit new particles
         let mut new_particles = Vec::new();
-        for emitter in &mut self.emitters {
+        for (_, emitter) in &mut self.emitters {
             if emitter.is_active() {
                 emitter.accumulated_s += delta_s;
                 while emitter.accumulated_s > emitter.definition.particle_interval_s {
@@ -85,28 +123,41 @@ impl ParticleSystem {
                     let speed = emitter.definition.velocity.min
                         + self.rng.gen::<f32>()
                             * (emitter.definition.velocity.max - emitter.definition.velocity.min);
-                    let pitch = self.rng.gen_range(
-                        -emitter.definition.spread_angle,
-                        emitter.definition.spread_angle,
-                    ) + emitter.definition.pitch;
-                    let yaw = self.rng.gen_range(
-                        -emitter.definition.spread_angle,
-                        emitter.definition.spread_angle,
-                    ) + emitter.definition.yaw;
+                    let pitch = if emitter.definition.spread_angle > 0.0 {
+                        self.rng.gen_range(
+                            -emitter.definition.spread_angle,
+                            emitter.definition.spread_angle,
+                        ) + emitter.definition.pitch
+                    } else {
+                        0.0
+                    };
+                    let yaw = if emitter.definition.spread_angle > 0.0 {
+                        self.rng.gen_range(
+                            -emitter.definition.spread_angle,
+                            emitter.definition.spread_angle,
+                        ) + emitter.definition.yaw
+                    } else {
+                        0.0
+                    };
                     let velocity = glm::rotate_vec3(&Vec3::y(), pitch, &Vec3::z());
                     let velocity = glm::rotate_vec3(&velocity, yaw, &Vec3::x()) * speed;
                     let lifetime = self
                         .rng
                         .gen_range(emitter.definition.life.min, emitter.definition.life.max);
+                    let emitter_position = match emitter.position {
+                        ParticlePosition::Fixed(pos) => pos,
+                        ParticlePosition::Handle(handle) => *self.positions.get(&handle).unwrap(),
+                        ParticlePosition::None => panic!("Emitter must have position"),
+                    };
                     let position = if let Some(area) = emitter.definition.start_area {
-                        emitter.position
+                        emitter_position
                             + Vec3::new(
                                 area.x * self.rng.gen_range(-1.0, 1.0),
                                 area.y * self.rng.gen_range(-1.0, 1.0),
                                 area.z * self.rng.gen_range(-1.0, 1.0),
                             )
                     } else {
-                        emitter.position
+                        emitter_position
                     };
                     new_particles.push(Particle {
                         position,
@@ -129,7 +180,7 @@ impl ParticleSystem {
         // Update particles
         for particle in &mut self.particles {
             match particle.target {
-                ParticleTarget::Fixed(position) => {
+                ParticlePosition::Fixed(position) => {
                     // Move towards a target
                     let speed = particle.velocity.norm() * delta_s;
                     let velocity = (position - particle.position).normalize() * speed;
@@ -139,17 +190,18 @@ impl ParticleSystem {
                         particle.lifetime = 0.0;
                     }
                 }
-                ParticleTarget::Player => {
+                ParticlePosition::Handle(handle) => {
+                    let target = self.positions.get(&handle).unwrap();
                     // Move towards a target
                     let speed = particle.velocity.norm() * delta_s;
-                    let velocity = (player_position - particle.position).normalize() * speed;
+                    let velocity = (target - particle.position).normalize() * speed;
                     particle.position += velocity;
-                    if particle.position.metric_distance(&player_position) < speed {
+                    if particle.position.metric_distance(&target) < speed {
                         // Close to target so discard this particle
                         particle.lifetime = 0.0;
                     }
                 }
-                ParticleTarget::None => {
+                ParticlePosition::None => {
                     // Linear movement
                     particle.position += particle.velocity * delta_s;
                     particle.lifetime -= delta_s;
@@ -157,14 +209,14 @@ impl ParticleSystem {
             }
         }
         // Update emitter timers
-        for emitter in &mut self.emitters {
+        for (_, emitter) in &mut self.emitters {
             if !emitter.definition.continuous {
                 emitter.life_time_s -= delta_s;
             }
         }
         // Remove inactive emitters
         self.emitters
-            .retain(|e| e.definition.continuous || e.life_time_s > 0.0);
+            .retain(|_, e| e.definition.continuous || e.life_time_s > 0.0);
     }
 
     pub fn draw(&mut self, view: &Mat4, projection: &Mat4, viewport_height: f32) {
@@ -227,8 +279,9 @@ pub struct Effect {
 
 #[derive(Clone, Debug)]
 pub struct Emitter {
-    pub position: Vec3,
-    pub target: ParticleTarget,
+    pub active: bool,
+    pub position: ParticlePosition,
+    pub target: ParticlePosition,
     pub definition: EmitterDef,
     pub accumulated_s: f32,
     pub life_time_s: f32,
@@ -236,7 +289,7 @@ pub struct Emitter {
 
 impl Emitter {
     pub fn is_active(&self) -> bool {
-        self.definition.continuous || self.life_time_s > 0.0
+        self.active && (self.definition.continuous || self.life_time_s > 0.0)
     }
 }
 
@@ -256,10 +309,12 @@ pub struct EmitterDef {
     pub texture_layers: Vec<f32>,
 }
 
+pub type ParticlePositionHandle = usize;
+
 #[derive(Copy, Clone, Debug)]
-pub enum ParticleTarget {
+pub enum ParticlePosition {
     Fixed(Vec3),
-    Player,
+    Handle(ParticlePositionHandle),
     None,
 }
 
@@ -267,7 +322,7 @@ pub enum ParticleTarget {
 pub struct Particle {
     pub id: usize,
     pub position: Vec3,
-    pub target: ParticleTarget,
+    pub target: ParticlePosition,
     pub velocity: Vec3,
     pub texture_layer: f32,
     pub size: f32,

@@ -292,16 +292,23 @@ impl InGameState {
             self.block_place_timer = 0.0;
         }
         // Remove a block
+        let dig_beam_emitter_handle = data.dig_beam_emitter_handle;
+        let mut dig_beam_active = false;
         if context.input().is_mouse_button_down(MouseButton::Left) {
-            self.block_remove_timer += delta;
-            if self.block_remove_timer > BLOCK_REMOVE_TIME_S {
-                // See if we need to remove a block
-                if let Some(hit) = data.world().cast_ray(
-                    &self.rendering().camera.position,
-                    self.rendering().camera.get_direction(),
-                    8.0,
-                    false,
-                ) {
+            if let Some(hit) = data.world().cast_ray(
+                &self.rendering().camera.position,
+                self.rendering().camera.get_direction(),
+                8.0,
+                false,
+            ) {
+                dig_beam_active = true;
+                let player_target_handle = data.player_target_handle;
+                data.particles_mut()
+                    .update_position_handle(player_target_handle, hit.hit_pos);
+                self.block_remove_timer += delta;
+                if self.block_remove_timer > BLOCK_REMOVE_TIME_S {
+                    // See if we need to remove a block
+
                     let (wbx, wby, wbz) = (
                         (hit.hit_block_pos.x).floor() as i16,
                         (hit.hit_block_pos.y).floor() as i16,
@@ -339,12 +346,16 @@ impl InGameState {
                             })
                             .unwrap();
                     }
+                    self.block_remove_timer -= BLOCK_REMOVE_TIME_S;
                 }
-                self.block_remove_timer -= BLOCK_REMOVE_TIME_S;
             }
         } else {
             self.block_remove_timer = 0.0;
         }
+        data.particles_mut()
+            .emitter_mut(dig_beam_emitter_handle)
+            .unwrap()
+            .active = dig_beam_active;
     }
 
     fn profile_chart(&mut self) -> &mut ProfileChart {
@@ -659,10 +670,12 @@ impl State<GameContext> for InGameState {
             }
         }
 
-        data.particles.as_mut().unwrap().update(
-            delta,
+        let player_position_handle = data.player_position_handle;
+        data.particles_mut().update_position_handle(
+            player_position_handle,
             self.rendering().camera().position + Vec3::new(0.0, 0.0, -0.25),
         );
+        data.particles.as_mut().unwrap().update(delta);
 
         self.profile_chart().update(context);
 
