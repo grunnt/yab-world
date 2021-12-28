@@ -4,8 +4,8 @@ use std::{collections::HashMap, thread::sleep};
 use common::{
     block::Block,
     chunk::{
-        chunk_buffer::ChunkBuffer, ChunkColumn, ChunkColumnPos, ChunkPos, ColumnStatus, CHUNK_SIZE,
-        WORLD_HEIGHT_CHUNKS,
+        chunk_buffer::ChunkBuffer, Chunk, ChunkColumn, ChunkColumnPos, ChunkPos, ColumnStatus,
+        CHUNK_SIZE, WORLD_HEIGHT_CHUNKS,
     },
     comms::RleEncode,
     world_type::GeneratorType,
@@ -63,25 +63,27 @@ impl ServerWorldHandler {
     }
 
     pub fn prepare_spawn_area(&mut self, col: ChunkColumnPos, chunk_range: i16) {
-        // Put the generator to work
+        // Load stored columns or put the generator to work
         for cy in col.y - chunk_range..col.y + chunk_range {
             for cx in col.x - chunk_range..col.x + chunk_range {
-                let gen_col = ChunkColumnPos::new(cx, cy);
-                self.buffer.store_column(ChunkColumn::new(
-                    gen_col,
-                    ColumnStatus::Requested,
-                    Vec::new(),
-                ));
-                self.outstanding_work += 1;
-                self.generator.generate(gen_col);
+                let new_col = ChunkColumnPos::new(cx, cy);
+                if let Some(chunks) = self.store.load_column(col) {
+                    self.buffer
+                        .store_column(ChunkColumn::new(col, ColumnStatus::Stored, chunks));
+                } else {
+                    self.buffer.store_column(ChunkColumn::new(
+                        new_col,
+                        ColumnStatus::Requested,
+                        Vec::new(),
+                    ));
+                    self.outstanding_work += 1;
+                    self.generator.generate(new_col);
+                }
             }
         }
         // And wait until the work is done
-        let mut preload_count = (chunk_range * 2) * (chunk_range * 2);
-        while preload_count > 0 {
-            if let Some(_) = self.try_get_generated_column(false) {
-                preload_count -= 1;
-            } else {
+        while self.outstanding_work > 0 {
+            if self.try_get_generated_column(false).is_none() {
                 sleep(time::Duration::from_millis(100));
             }
         }
@@ -105,15 +107,18 @@ impl ServerWorldHandler {
         }
     }
 
-    pub fn try_clone_stored_column(&self, col: ChunkColumnPos) -> Option<Vec<Vec<u8>>> {
+    pub fn try_clone_existing_column(&mut self, col: ChunkColumnPos) -> Option<Vec<Vec<u8>>> {
         if let Some(column) = self.buffer.get_column_pos(&col) {
             if column.status() == ColumnStatus::Stored {
-                let mut block_data = Vec::new();
-                for chunk in &column.chunks {
-                    let mut bytes = Vec::new();
-                    chunk.blocks.rle_encode_to(&mut bytes).unwrap();
-                    block_data.push(bytes);
-                }
+                return Some(compress_chunk(&column.chunks));
+            }
+        } else {
+            if let Some(chunks) = self.store.load_column(col) {
+                let block_data = compress_chunk(&chunks);
+                // Store in buffer
+                self.buffer
+                    .store_column(ChunkColumn::new(col, ColumnStatus::Stored, chunks));
+                // Return compressed blocks
                 return Some(block_data);
             }
         }
@@ -204,4 +209,14 @@ impl ServerWorldHandler {
     pub fn save(&mut self, gametime: f32) {
         self.store.save_world_if_needed(true, gametime);
     }
+}
+
+fn compress_chunk(chunks: &Vec<Chunk>) -> Vec<Vec<u8>> {
+    let mut block_data = Vec::new();
+    for chunk in chunks {
+        let mut bytes = Vec::new();
+        chunk.blocks.rle_encode_to(&mut bytes).unwrap();
+        block_data.push(bytes);
+    }
+    block_data
 }

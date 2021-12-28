@@ -75,7 +75,7 @@ impl YabServer {
                 let mut rng = rand::thread_rng();
                 debug!("World time is {}", daynight.get_time());
 
-                // Set a marker for the spawn area, so that chunks there will be preloaded
+                // Preload a starting area of the world
                 let starting_chunk_col = ChunkColumnPos::new(REGION_SIZE_BLOCKS / CHUNK_SIZE as i16 / 2, REGION_SIZE_BLOCKS / CHUNK_SIZE as i16 / 2);
                 let startup_chunk_range = 16;
                 info!(
@@ -206,7 +206,7 @@ impl YabServer {
                                     for col in columns {
                                         // Subscribe to column to receive future changes
                                         client.subscribe_to(col);
-                                        if let Some(block_data) = world.try_clone_stored_column(col) {
+                                        if let Some(block_data) = world.try_clone_existing_column(col) {
                                             // If it is available, send immediately
                                             client.connection.send(
                                                 ServerMessage::ChunkColumn { col, block_data },
