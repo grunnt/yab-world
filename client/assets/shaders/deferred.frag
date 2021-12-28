@@ -79,7 +79,7 @@ void main()
         // This is the background
         fogDistance = fogEnd;
     }
-    float fogAmount = pow(1.0 - clamp((fogEnd - fogDistance) / (fogEnd - fogStart), 0.0, 1.0), 2);
+    float fogAmount = pow(1.0 - clamp((fogEnd - fogDistance) / (fogEnd - fogStart), 0.0, 1.0), 4);
     
     // Mix fog into color
     Color = vec4(mix(color, fogColor, fogAmount), 1.0);
