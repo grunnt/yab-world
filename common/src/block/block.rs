@@ -48,6 +48,8 @@ pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
 
     fn sandstone_block() -> Self;
 
+    fn bricks_block() -> Self;
+
     fn wood_block() -> Self;
 
     fn gold_block() -> Self;
@@ -113,6 +115,9 @@ impl BlockTrait for u32 {
     }
     fn sandstone_block() -> Self {
         SANDSTONE_BLOCK
+    }
+    fn bricks_block() -> Self {
+        BRICKS_BLOCK
     }
     fn wood_block() -> Self {
         WOOD_BLOCK

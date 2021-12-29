@@ -4,7 +4,10 @@ use common::{
     block::*,
     chunk::{CHUNK_SIZE, WORLD_HEIGHT_CHUNKS},
 };
-use noise::{Fbm, Perlin};
+use log::debug;
+use noise::{Fbm, Perlin, Value};
+
+const OBJECT_GRID_SIZE: f64 = (CHUNK_SIZE / 2) as f64;
 
 pub struct HillsGenerator {
     roughness_noise: NoiseSource2D<Perlin>,
@@ -12,6 +15,11 @@ pub struct HillsGenerator {
     water_z: usize,
     resource_type_noise: NoiseSource2D<Perlin>,
     resource_density_noise: NoiseSource3D<Perlin>,
+    grid_x_noise: NoiseSource2D<Perlin>,
+    grid_y_noise: NoiseSource2D<Perlin>,
+    density_noise: NoiseSource2D<Fbm>,
+    type_noise: NoiseSource2D<Value>,
+    size_noise: NoiseSource2D<Value>,
 }
 
 impl HillsGenerator {
@@ -22,12 +30,17 @@ impl HillsGenerator {
             resource_type_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0, 2.0),
             resource_density_noise: NoiseSource3D::<Perlin>::new_perlin(seed, 0.0, 1.0),
             water_z: 80,
+            grid_x_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0, OBJECT_GRID_SIZE as f64),
+            grid_y_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0, OBJECT_GRID_SIZE as f64),
+            density_noise: NoiseSource2D::<Fbm>::new_fbm(seed, 0.0, 1.0),
+            type_noise: NoiseSource2D::<Value>::new_value(seed, 0.0, 10.0),
+            size_noise: NoiseSource2D::<Value>::new_value(seed, 1.0, 5.0),
         }
     }
 }
 
 impl Generator for HillsGenerator {
-    fn generate(&mut self, x: i16, y: i16) -> Vec<Block> {
+    fn generate(&mut self, x: i16, y: i16, objects: bool) -> Vec<Block> {
         let roughness = self
             .roughness_noise
             .get(434.0 - x as f64, 545.0 + y as f64, 0.0001);
@@ -100,6 +113,79 @@ impl Generator for HillsGenerator {
             blocks.push(block);
         }
 
+        if objects {
+            // Collect information about the closest objects
+            let mut close_objects = Vec::new();
+            let this_grid_x = (x as f64 / OBJECT_GRID_SIZE as f64).floor() as i16;
+            let this_grid_y = (y as f64 / OBJECT_GRID_SIZE as f64).floor() as i16;
+            for dy in -1..2 {
+                for dx in -1..2 {
+                    let grid_x = (this_grid_x + dx) as f64;
+                    let grid_y = (this_grid_y + dy) as f64;
+                    let point_x = (grid_x * OBJECT_GRID_SIZE
+                        + self.grid_x_noise.get(grid_x + 0.123, grid_y + 50.665, 10.0))
+                        as i16;
+                    let point_y = (grid_y * OBJECT_GRID_SIZE
+                        + self.grid_y_noise.get(grid_x - 102.4, grid_y + 553.1, 10.0))
+                        as i16;
+                    let density = self.density_noise.get(point_x as f64, point_y as f64, 0.01);
+                    if density > 0.5 || density < 0.3 {
+                        // 0.15
+                        let size =
+                            (self.size_noise.get(point_x as f64, point_y as f64, 1.0) * 2.0) as i16;
+                        if x >= point_x - size
+                            && x <= point_x + size
+                            && y >= point_y - size
+                            && y <= point_y + size
+                        {
+                            close_objects.push((point_x, point_y, density, size));
+                        }
+                    }
+                }
+            }
+            // Place objects on this column
+            for (ox, oy, density, size) in close_objects {
+                if density > 0.5 {
+                    if let Some(ground_z) = dry_rock_top_z(&blocks) {
+                        // Tree
+                        if x == ox && y == oy {
+                            for z in ground_z..ground_z + 16 {
+                                blocks[z] = Block::log_block();
+                            }
+                        }
+                    }
+                } else {
+                    if let Some(center_ground_z) = dry_rock_top_z(&self.generate(ox, oy, false)) {
+                        // Tower
+                        let ground_z = rock_top_z(&blocks);
+                        for z in ground_z..center_ground_z + 16 {
+                            blocks[z] = Block::bricks_block();
+                        }
+                    }
+                }
+            }
+        }
+
         blocks
     }
+}
+
+pub fn dry_rock_top_z(blocks: &Vec<Block>) -> Option<usize> {
+    for z in (0..blocks.len()).rev() {
+        if blocks[z] == Block::water_block() {
+            return None;
+        } else if blocks[z] == Block::rock_block() {
+            return Some(z);
+        }
+    }
+    None
+}
+
+pub fn rock_top_z(blocks: &Vec<Block>) -> usize {
+    for z in (0..blocks.len()).rev() {
+        if blocks[z] == Block::rock_block() {
+            return z;
+        }
+    }
+    0
 }

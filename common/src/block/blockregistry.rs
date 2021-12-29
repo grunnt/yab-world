@@ -26,6 +26,7 @@ pub const LAMP_BLOCK: u32 = 520;
 pub const IRON_BLOCK: u32 = 521;
 pub const GOLD_BLOCK: u32 = 522;
 pub const ICE_BLOCK: u32 = 523;
+pub const BRICKS_BLOCK: u32 = 524;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockDef {
@@ -336,7 +337,26 @@ impl BlockRegistry {
                 resource_cost: vec![],
             },
         );
-        let mut index = ICE_BLOCK + 1;
+        blocks.insert(
+            BRICKS_BLOCK,
+            BlockDef {
+                name: "Stone bricks".to_string(),
+                color: ColorRGBu8::new(218, 224, 224),
+                textures: vec![
+                    "stone_bricks".to_string(),
+                    "stone_bricks".to_string(),
+                    "stone_bricks".to_string(),
+                    "stone_bricks".to_string(),
+                    "stone_bricks".to_string(),
+                    "stone_bricks".to_string(),
+                ],
+                light: 0,
+                buildable: true,
+                resource_yield: vec![(0, 1)],
+                resource_cost: vec![(0, 1)],
+            },
+        );
+        let mut index = BRICKS_BLOCK + 1;
         blocks.insert(
             index,
             BlockDef {
@@ -354,26 +374,6 @@ impl BlockRegistry {
                 buildable: true,
                 resource_yield: vec![(1, 1)],
                 resource_cost: vec![(1, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Stone bricks".to_string(),
-                color: ColorRGBu8::new(218, 224, 224),
-                textures: vec![
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
             },
         );
         index += 1;

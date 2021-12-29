@@ -10,5 +10,5 @@ pub use hills_generator::HillsGenerator;
 pub use water_generator::WaterWorldGenerator;
 
 pub trait Generator {
-    fn generate(&mut self, x: i16, y: i16) -> Vec<Block>;
+    fn generate(&mut self, x: i16, y: i16, objects: bool) -> Vec<Block>;
 }

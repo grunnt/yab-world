@@ -1,6 +1,4 @@
 use crate::generator::generators::*;
-use crate::object_placer::ObjectPlacer;
-use crate::object_placer::TreePlacer;
 use common::block::*;
 use common::chunk::*;
 use common::world_type::GeneratorType;
@@ -11,7 +9,6 @@ pub struct ColumnGenerator {
     flat_generator: FlatGenerator,
     water_generator: WaterWorldGenerator,
     alien_generator: AlienGenerator,
-    object_placer: TreePlacer,
 }
 
 impl ColumnGenerator {
@@ -21,7 +18,6 @@ impl ColumnGenerator {
             flat_generator: FlatGenerator::new(32, 36),
             water_generator: WaterWorldGenerator::new(seed),
             alien_generator: AlienGenerator::new(seed),
-            object_placer: TreePlacer::new(seed),
         }
     }
 
@@ -45,13 +41,12 @@ impl ColumnGenerator {
             for rel_y in 0..CHUNK_SIZE {
                 let x = rel_x as i16 + cwx;
                 let y = rel_y as i16 + cwy;
-                let mut blocks = match world_type {
-                    GeneratorType::Flat => self.flat_generator.generate(x, y),
-                    GeneratorType::Water => self.water_generator.generate(x, y),
-                    GeneratorType::Alien => self.alien_generator.generate(x, y),
-                    GeneratorType::Default => self.hills_generator.generate(x, y),
+                let blocks = match world_type {
+                    GeneratorType::Flat => self.flat_generator.generate(x, y, true),
+                    GeneratorType::Water => self.water_generator.generate(x, y, true),
+                    GeneratorType::Alien => self.alien_generator.generate(x, y, true),
+                    GeneratorType::Default => self.hills_generator.generate(x, y, true),
                 };
-                self.object_placer.place(x, y, &mut blocks);
                 for cz in 0..WORLD_HEIGHT_CHUNKS {
                     let chunk = column.get_mut(cz).unwrap();
                     let chunk_bottom_z = cz * CHUNK_SIZE;
