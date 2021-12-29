@@ -20,7 +20,7 @@ impl FlatGenerator {
 }
 
 impl Generator for FlatGenerator {
-    fn generate(&mut self, _x: i16, _y: i16, objects: bool) -> Vec<Block> {
+    fn generate(&mut self, _x: i16, _y: i16, _objects: bool) -> Vec<Block> {
         let mut blocks = Vec::new();
         for z in 0..WORLD_HEIGHT_CHUNKS * CHUNK_SIZE {
             let block = if z <= 2 {

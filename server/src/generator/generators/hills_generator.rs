@@ -4,7 +4,6 @@ use common::{
     block::*,
     chunk::{CHUNK_SIZE, WORLD_HEIGHT_CHUNKS},
 };
-use log::debug;
 use noise::{Fbm, Perlin, Value};
 
 const OBJECT_GRID_SIZE: f64 = (CHUNK_SIZE / 2) as f64;
@@ -129,7 +128,7 @@ impl Generator for HillsGenerator {
                         + self.grid_y_noise.get(grid_x - 102.4, grid_y + 553.1, 10.0))
                         as i16;
                     let density = self.density_noise.get(point_x as f64, point_y as f64, 0.01);
-                    if density > 0.5 || density < 0.3 {
+                    if density > 0.5 || density < 0.2 {
                         // 0.15
                         let size =
                             (self.size_noise.get(point_x as f64, point_y as f64, 1.0) * 2.0) as i16;
@@ -157,9 +156,33 @@ impl Generator for HillsGenerator {
                 } else {
                     if let Some(center_ground_z) = dry_rock_top_z(&self.generate(ox, oy, false)) {
                         // Tower
+                        let height = 16;
+                        let roof_height = 14;
                         let ground_z = rock_top_z(&blocks);
-                        for z in ground_z..center_ground_z + 16 {
-                            blocks[z] = Block::bricks_block();
+                        let edge =
+                            x == ox - size || x == ox + size || y == oy - size || y == oy + size;
+                        if edge {
+                            let height = (height - (x % 2 + y % 2).min(1)) as usize;
+                            for z in ground_z..center_ground_z + height {
+                                blocks[z] = Block::bricks_block();
+                            }
+                            if x == ox || y == oy {
+                                blocks[center_ground_z + roof_height - 2] = Block::empty_block();
+                            }
+                        } else {
+                            if ground_z <= center_ground_z {
+                                for z in ground_z..center_ground_z {
+                                    blocks[z] = Block::bricks_block();
+                                }
+                            }
+                            blocks[center_ground_z] = Block::wood_block();
+                            for z in center_ground_z + 1..center_ground_z + roof_height {
+                                blocks[z] = Block::empty_block();
+                            }
+                            blocks[center_ground_z + roof_height] = Block::wood_block();
+                            if x == ox && y == oy {
+                                blocks[center_ground_z + roof_height - 1] = Block::lamp_block();
+                            }
                         }
                     }
                 }

@@ -25,7 +25,7 @@ impl AlienGenerator {
 }
 
 impl Generator for AlienGenerator {
-    fn generate(&mut self, x: i16, y: i16, objects: bool) -> Vec<Block> {
+    fn generate(&mut self, x: i16, y: i16, _objects: bool) -> Vec<Block> {
         let roughness = 0.01;
         let mut blocks = Vec::new();
         let mut ice_added = 0;

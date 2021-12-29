@@ -17,7 +17,7 @@ impl WaterWorldGenerator {
 }
 
 impl Generator for WaterWorldGenerator {
-    fn generate(&mut self, x: i16, y: i16, objects: bool) -> Vec<Block> {
+    fn generate(&mut self, x: i16, y: i16, _objects: bool) -> Vec<Block> {
         let mut blocks = Vec::new();
         for z in 0..WORLD_HEIGHT_CHUNKS * CHUNK_SIZE {
             let floor_z = self.ocean_floor_noise.get(x as f64, y as f64, 0.01) as usize;

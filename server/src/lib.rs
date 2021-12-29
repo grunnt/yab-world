@@ -1,6 +1,5 @@
 mod client;
 pub mod generator;
-mod object_placer;
 mod player_store;
 mod server_world_handler;
 pub mod superchunk;
