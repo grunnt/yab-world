@@ -10,5 +10,7 @@ pub use hills_generator::HillsGenerator;
 pub use water_generator::WaterWorldGenerator;
 
 pub trait Generator {
-    fn generate(&mut self, x: i16, y: i16, objects: bool) -> Vec<Block>;
+    fn generate(&mut self, x: i16, y: i16) -> Vec<Block>;
+
+    fn determine_rock_water_top(&mut self, x: i16, y: i16) -> (usize, usize, usize);
 }

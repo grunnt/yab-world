@@ -1,5 +1,5 @@
 {
-  "render_range_chunks": 16,
+  "render_range_chunks": 32,
   "camera_sensitivity_x": 1.0,
   "camera_sensitivity_y": 1.0
 }

@@ -391,7 +391,7 @@ impl State<GameContext> for InGameState {
             data.starting_position.x,
             data.starting_position.y,
             data.starting_position.z,
-            Vec3::new(0.75, 0.75, 1.75),
+            Vec3::new(0.6, 0.6, 1.5),
         );
 
         self.rendering = Some(Rendering::new(data, context));

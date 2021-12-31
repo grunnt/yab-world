@@ -27,6 +27,7 @@ pub const IRON_BLOCK: u32 = 521;
 pub const GOLD_BLOCK: u32 = 522;
 pub const ICE_BLOCK: u32 = 523;
 pub const BRICKS_BLOCK: u32 = 524;
+pub const GREEN_CONCRETE_BLOCK: u32 = 525;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockDef {
@@ -356,7 +357,26 @@ impl BlockRegistry {
                 resource_cost: vec![(0, 1)],
             },
         );
-        let mut index = BRICKS_BLOCK + 1;
+        blocks.insert(
+            GREEN_CONCRETE_BLOCK,
+            BlockDef {
+                name: "Green concrete".to_string(),
+                color: ColorRGBu8::new(126, 189, 49),
+                textures: vec![
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                ],
+                light: 0,
+                buildable: true,
+                resource_yield: vec![(0, 1)],
+                resource_cost: vec![(0, 1)],
+            },
+        );
+        let mut index = GREEN_CONCRETE_BLOCK + 1;
         blocks.insert(
             index,
             BlockDef {
@@ -509,26 +529,6 @@ impl BlockRegistry {
                     "yellow_concrete".to_string(),
                     "yellow_concrete".to_string(),
                     "yellow_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Green concrete".to_string(),
-                color: ColorRGBu8::new(126, 189, 49),
-                textures: vec![
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
                 ],
                 light: 0,
                 buildable: true,

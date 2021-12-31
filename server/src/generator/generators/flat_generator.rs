@@ -20,7 +20,7 @@ impl FlatGenerator {
 }
 
 impl Generator for FlatGenerator {
-    fn generate(&mut self, _x: i16, _y: i16, _objects: bool) -> Vec<Block> {
+    fn generate(&mut self, _x: i16, _y: i16) -> Vec<Block> {
         let mut blocks = Vec::new();
         for z in 0..WORLD_HEIGHT_CHUNKS * CHUNK_SIZE {
             let block = if z <= 2 {
@@ -37,5 +37,12 @@ impl Generator for FlatGenerator {
             blocks.push(block);
         }
         blocks
+    }
+
+    fn determine_rock_water_top(&mut self, _x: i16, _y: i16) -> (usize, usize, usize) {
+        let rock_top_z = self.dirt_bottom_z - 1;
+        let water_top_z = 0;
+        let top_z = self.terrain_top_z;
+        (rock_top_z, water_top_z, top_z)
     }
 }

@@ -34,6 +34,8 @@ pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
     /// If true objects can pass through
     fn is_passable(&self) -> bool;
 
+    fn is_rocky(&self) -> bool;
+
     fn empty_block() -> Self;
 
     fn water_block() -> Self;
@@ -49,6 +51,8 @@ pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
     fn sandstone_block() -> Self;
 
     fn bricks_block() -> Self;
+
+    fn green_concrete_block() -> Self;
 
     fn wood_block() -> Self;
 
@@ -95,6 +99,11 @@ impl BlockTrait for u32 {
         self.kind() < SOLID_MIN_ID
     }
 
+    fn is_rocky(&self) -> bool {
+        let kind = self.kind();
+        kind == ROCK_BLOCK || kind == IRON_BLOCK || kind == GOLD_BLOCK || kind == BEDROCK_BLOCK
+    }
+
     fn empty_block() -> Self {
         AIR_BLOCK
     }
@@ -118,6 +127,9 @@ impl BlockTrait for u32 {
     }
     fn bricks_block() -> Self {
         BRICKS_BLOCK
+    }
+    fn green_concrete_block() -> Self {
+        GREEN_CONCRETE_BLOCK
     }
     fn wood_block() -> Self {
         WOOD_BLOCK
