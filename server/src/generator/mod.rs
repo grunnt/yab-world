@@ -1,4 +1,4 @@
-mod chunk_generator;
+mod column_generator;
 mod generators;
 mod noise_source;
 mod object_placer;

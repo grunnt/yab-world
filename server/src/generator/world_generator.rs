@@ -1,11 +1,14 @@
+use common::block::*;
 use common::chunk::*;
 use common::world_type::GeneratorType;
 use crossbeam::channel::*;
 use crossbeam::unbounded;
 use log::*;
+use std::sync::Arc;
 use std::thread;
 
-use crate::generator::chunk_generator::ColumnGenerator;
+use crate::generator::column_generator::ColumnGenerator;
+use crate::generator::PregeneratedObject;
 
 pub struct WorldGenerator {
     pub worker_count: usize,
@@ -16,6 +19,20 @@ pub struct WorldGenerator {
 impl WorldGenerator {
     pub fn new(seed: u32, world_type: GeneratorType) -> WorldGenerator {
         // let seed = 1234;
+        let poi_object_list = Arc::new(vec![PregeneratedObject::solid(
+            11,
+            11,
+            32,
+            Block::bricks_block(),
+            Block::rock_block(),
+        )]);
+        let tree_object_list = Arc::new(vec![PregeneratedObject::solid(
+            1,
+            1,
+            16,
+            Block::log_block(),
+            Block::dirt_block(),
+        )]);
         let worker_count = num_cpus::get() - 1;
         info!("Initializing {} generator workers", worker_count);
         // Start chunk column generator threads
@@ -24,10 +41,13 @@ impl WorldGenerator {
         for id in 0..worker_count {
             let colpos_rx = colpos_rx.clone();
             let column_tx = column_tx.clone();
+            let poi_object_list = Arc::clone(&poi_object_list);
+            let tree_object_list = Arc::clone(&tree_object_list);
             thread::Builder::new()
                 .name(format!("generator{}", id).to_string())
                 .spawn(move || {
-                    let mut generator = ColumnGenerator::new(seed);
+                    let mut generator =
+                        ColumnGenerator::new(seed, poi_object_list, tree_object_list);
                     info!("Starting generator {}", id);
                     loop {
                         match colpos_rx.recv() {

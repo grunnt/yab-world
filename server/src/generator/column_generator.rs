@@ -1,30 +1,35 @@
 use crate::generator::generators::*;
-use crate::generator::object_placer::TreePlacer;
 use common::block::*;
 use common::chunk::*;
 use common::world_type::GeneratorType;
 use std::i16;
+use std::sync::Arc;
 
-use super::PoiPlacer;
+use super::ObjectGrid;
+use super::PregeneratedObject;
 
 pub struct ColumnGenerator {
     hills_generator: HillsGenerator,
     flat_generator: FlatGenerator,
     water_generator: WaterWorldGenerator,
     alien_generator: AlienGenerator,
-    tree_placer: TreePlacer,
-    poi_placer: PoiPlacer,
+    poi_objects: ObjectGrid,
+    tree_objects: ObjectGrid,
 }
 
 impl ColumnGenerator {
-    pub fn new(seed: u32) -> Self {
+    pub fn new(
+        seed: u32,
+        poi_object_list: Arc<Vec<PregeneratedObject>>,
+        tree_object_list: Arc<Vec<PregeneratedObject>>,
+    ) -> Self {
         ColumnGenerator {
             hills_generator: HillsGenerator::new(seed),
             flat_generator: FlatGenerator::new(32, 36),
             water_generator: WaterWorldGenerator::new(seed),
             alien_generator: AlienGenerator::new(seed),
-            tree_placer: TreePlacer::new(seed),
-            poi_placer: PoiPlacer::new(seed),
+            poi_objects: ObjectGrid::new(seed, poi_object_list, 1, 32, 0.4, false),
+            tree_objects: ObjectGrid::new(seed, tree_object_list, 0, 2, 0.4, true),
         }
     }
 
@@ -57,8 +62,8 @@ impl ColumnGenerator {
                 };
                 let mut blocks = generator.generate(x, y);
                 // Place trees and points of interest
-                self.tree_placer.place(x, y, &mut blocks, generator);
-                self.poi_placer.place(x, y, &mut blocks, generator);
+                self.poi_objects.place(x, y, &mut blocks, generator);
+                self.tree_objects.place(x, y, &mut blocks, generator);
                 // Copy the results into the chunk column
                 for cz in 0..WORLD_HEIGHT_CHUNKS {
                     let chunk = column.get_mut(cz).unwrap();

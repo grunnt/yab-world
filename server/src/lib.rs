@@ -76,7 +76,7 @@ impl YabServer {
 
                 // Preload a starting area of the world
                 let starting_chunk_col = ChunkColumnPos::new(REGION_SIZE_BLOCKS / CHUNK_SIZE as i16 / 2, REGION_SIZE_BLOCKS / CHUNK_SIZE as i16 / 2);
-                let startup_chunk_range = 16;
+                let startup_chunk_range = 4;
                 info!(
                     "Preparing spawn area with {} radius around {:?}",
                     startup_chunk_range, starting_chunk_col
