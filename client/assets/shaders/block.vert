@@ -9,7 +9,7 @@ out VS_OUTPUT {
     vec2 TexCoord;
     flat float Layer;
     vec3 Normal;
-    vec2 Light;
+    float Light;
 } OUT;
 
 uniform mat4 Model;
@@ -31,9 +31,8 @@ void main()
     vec3 unpackedNormal = normalize(vec3(int(Normal & 3u) - 1, int((Normal >> 2u) & 3u) - 1, int((Normal >> 4u) & 3u) - 1));
     OUT.Normal = transpose(inverse(mat3(View * Model))) * unpackedNormal;
     
-    // Unpack the light values
-    vec2 unpackedLights = vec2(float(Light & 15u) / 15.0, float((Light >> 4u) & 15u) / 15.0);
-    OUT.Light = unpackedLights;
+    // Get the light values
+    OUT.Light = float(Light) / 15.0;
 
     gl_Position = Projection * viewPos;
 }

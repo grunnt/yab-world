@@ -11,7 +11,7 @@ in VS_OUTPUT {
     vec2 TexCoord;
     flat float Layer;
     vec3 Normal;
-    vec2 Light;
+    float Light;
 } IN;
 
 void main()
@@ -23,5 +23,5 @@ void main()
     // Store the fragment color in the gbuffer texture
     gColor = texture(blockTextures, vec3(IN.TexCoord, IN.Layer)).xyz;
     // Store light values in the gbuffer light texture
-    gLight = vec3(IN.Light, 1.0); // Z value is used to detect background
+    gLight = vec3(IN.Light, 0.0, 1.0); // Z value is used to detect background
 }

@@ -28,7 +28,7 @@ impl ColumnGenerator {
             flat_generator: FlatGenerator::new(32, 36),
             water_generator: WaterWorldGenerator::new(seed),
             alien_generator: AlienGenerator::new(seed),
-            poi_objects: ObjectGrid::new(seed, poi_object_list, 1, 32, 0.4, false),
+            poi_objects: ObjectGrid::new(seed, poi_object_list, 1, 8, 0.4, false),
             tree_objects: ObjectGrid::new(seed, tree_object_list, 0, 2, 0.4, true),
         }
     }
@@ -62,8 +62,8 @@ impl ColumnGenerator {
                 };
                 let mut blocks = generator.generate(x, y);
                 // Place trees and points of interest
-                self.poi_objects.place(x, y, &mut blocks, generator);
                 self.tree_objects.place(x, y, &mut blocks, generator);
+                self.poi_objects.place(x, y, &mut blocks, generator);
                 // Copy the results into the chunk column
                 for cz in 0..WORLD_HEIGHT_CHUNKS {
                     let chunk = column.get_mut(cz).unwrap();

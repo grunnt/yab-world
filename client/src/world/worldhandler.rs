@@ -92,7 +92,6 @@ impl WorldHandler {
                                 ColumnStatus::Stored,
                                 chunks,
                             ));
-                            buffer.propagate_column_sunlight(col);
                         }
                         _ => {
                             panic!("Cannot handle {:?}", message);
@@ -112,7 +111,7 @@ impl WorldHandler {
                     for col in propagation_columns {
                         // Propagate light in all chunks of this column
                         for z in 0..WORLD_HEIGHT_CHUNKS {
-                            buffer.propagate_chunk_light_and_sunlight(
+                            buffer.propagate_chunk_lights(
                                 ChunkPos::new(col.x, col.y, z as i16),
                                 &mut HashSet::new(),
                                 &block_registry_clone,
@@ -653,19 +652,6 @@ impl WorldHandler {
                 } else {
                     chunk.set_block(x_rel, y_rel, z_rel, new_block);
                 }
-                // Does the new block block existing sunlight? Then remove the propagated sunlight.
-                let old_block_sunlight = old_block.get_sunlight();
-                if new_block.is_opaque() && old_block_sunlight > 0 {
-                    self.chunks.remove_sunlight_if_needed(
-                        wbx,
-                        wby,
-                        wbz,
-                        old_block_sunlight,
-                        dirty_chunks,
-                    );
-                }
-                self.chunks
-                    .propagate_sunlight_if_needed(wbx, wby, wbz, dirty_chunks);
                 if new_block.get_light() > 0 {
                     // Propagate light from this block outward
                     self.chunks.propagate_light(wbx, wby, wbz, dirty_chunks);

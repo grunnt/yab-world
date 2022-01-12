@@ -8,7 +8,9 @@ use std::sync::Arc;
 use std::thread;
 
 use crate::generator::column_generator::ColumnGenerator;
+use crate::generator::ObjectGenerator;
 use crate::generator::PregeneratedObject;
+use crate::generator::TowerGenerator;
 
 pub struct WorldGenerator {
     pub worker_count: usize,
@@ -19,13 +21,14 @@ pub struct WorldGenerator {
 impl WorldGenerator {
     pub fn new(seed: u32, world_type: GeneratorType) -> WorldGenerator {
         // let seed = 1234;
-        let poi_object_list = Arc::new(vec![PregeneratedObject::solid(
-            11,
-            11,
-            32,
-            Block::bricks_block(),
-            Block::rock_block(),
-        )]);
+        let poi_object_list = {
+            let mut result = Vec::new();
+            let mut gen = TowerGenerator::new(seed);
+            for _ in 0..5 {
+                result.push(gen.generate());
+            }
+            Arc::new(result)
+        };
         let tree_object_list = Arc::new(vec![PregeneratedObject::solid(
             1,
             1,

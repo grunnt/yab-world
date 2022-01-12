@@ -94,13 +94,6 @@ impl Generator for HillsGenerator {
         let mut top_z = 0;
         for z in (self.terrain_min_z..self.terrain_min_z + self.terrain_z_range).rev() {
             let block = self.determine_block(z, x, y, roughness).kind();
-            if top_z == 0 && block != Block::empty_block() {
-                top_z = if block == Block::water_block() {
-                    z
-                } else {
-                    z + self.soil_thickness
-                };
-            }
             if water_top_z == 0 && block == Block::water_block() {
                 water_top_z = z;
             }
@@ -109,6 +102,7 @@ impl Generator for HillsGenerator {
                 break;
             }
         }
+        top_z = rock_top_z + self.soil_thickness;
         (rock_top_z, water_top_z, top_z)
     }
 }

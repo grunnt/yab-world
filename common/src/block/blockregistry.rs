@@ -29,6 +29,9 @@ pub const ICE_BLOCK: u32 = 523;
 pub const BRICKS_BLOCK: u32 = 524;
 pub const GREEN_CONCRETE_BLOCK: u32 = 525;
 
+// Special block for world generation that should never be used in the world itself
+pub const IGNORE_BLOCK: u32 = std::u32::MAX;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockDef {
     pub name: String,

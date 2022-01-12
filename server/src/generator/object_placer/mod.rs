@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use common::block::*;
+use common::{block::*, chunk::WORLD_HEIGHT_BLOCKS};
 use noise::*;
 
 use super::{Generator, NoiseSource2D};
@@ -119,29 +119,41 @@ impl ObjectGrid {
             anchor_top_z
         } else {
             anchor_rock_top_z
-        };
+        } + 1;
         if anchor_world_z < pregenerated.anchor_z {
             return;
         }
         let z1 = anchor_world_z - pregenerated.anchor_z;
         let z2 = z1 + pregenerated.size_z;
-        let foundation_z = anchor_world_z - pregenerated.anchor_z;
         let (rock_top_z, _, top_z) = generator.determine_rock_water_top(x, y);
         let from_z = if pregenerated.place_on_soil {
             top_z
         } else {
             rock_top_z
-        };
+        }
+        .min(z1);
         let x_rel = (x - x1) as usize;
         let y_rel = (y - y1) as usize;
+        let bottom_block = pregenerated.get(x_rel, y_rel, 0);
+        let place_foundation = bottom_block != Block::empty_block() && bottom_block != IGNORE_BLOCK;
         for z in from_z..z2 {
             let z_rel = z - z1;
-            if z < foundation_z {
-                if let Some(foundation_block) = pregenerated.foundation_block {
-                    blocks[z] = foundation_block;
+            if z < z1 {
+                if place_foundation {
+                    if let Some(foundation_block) = pregenerated.foundation_block {
+                        blocks[z] = foundation_block;
+                    }
                 }
             } else {
-                blocks[z] = pregenerated.get(x_rel, y_rel, z_rel);
+                let object_block = pregenerated.get(x_rel, y_rel, z_rel);
+                if object_block != IGNORE_BLOCK {
+                    blocks[z] = pregenerated.get(x_rel, y_rel, z_rel);
+                }
+            }
+        }
+        if pregenerated.overwrite_empty {
+            for z in z2..WORLD_HEIGHT_BLOCKS as usize {
+                blocks[z] = Block::empty_block();
             }
         }
     }
@@ -200,7 +212,53 @@ impl PregeneratedObject {
         self.blocks[z + y * self.size_z + x * self.size_z * self.size_y]
     }
 
-    fn set(&mut self, x: usize, y: usize, z: usize, block: Block) {
+    pub fn set(&mut self, x: usize, y: usize, z: usize, block: Block) {
         self.blocks[z + y * self.size_z + x * self.size_z * self.size_y] = block;
+    }
+
+    pub fn set_rectangle(
+        &mut self,
+        x1: usize,
+        y1: usize,
+        z1: usize,
+        x2: usize,
+        y2: usize,
+        z2: usize,
+        block: Block,
+        checkerboard: bool,
+    ) {
+        for rz in z1..z2 {
+            for rx in x1..x2 {
+                if !checkerboard || rx % 2 == 0 {
+                    self.set(rx, y1, rz, block);
+                    self.set(rx, y2 - 1, rz, block);
+                }
+            }
+            for ry in y1..y2 {
+                if !checkerboard || ry % 2 == 0 {
+                    self.set(x1, ry, rz, block);
+                    self.set(x2 - 1, ry, rz, block);
+                }
+            }
+        }
+    }
+
+    pub fn set_filled_rectangle(
+        &mut self,
+        x1: usize,
+        y1: usize,
+        z1: usize,
+        x2: usize,
+        y2: usize,
+        z2: usize,
+        block: Block,
+    ) {
+        for rx in x1..x2 {
+            for ry in y1..y2 {
+                for rz in z1..z2 {
+                    self.set(rx, ry, rz, block);
+                }
+            }
+        }
     }
 }

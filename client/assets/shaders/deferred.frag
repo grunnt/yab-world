@@ -45,9 +45,8 @@ void main()
     vec3 inRandom = normalize(texture(gRandom, IN.TexCoords * ssaoTextureScale).xyz);
 
     // Compute sunlight (diffuse)
-    float sunLightLevel = inLight.g;
     vec3 nSunDirection = normalize((View * vec4(sunLightDirection, 0.0)).xyz);
-    float sunIntensity = max(dot(nSunDirection, inNormal), 0.0) * sunLightLevel;
+    float sunIntensity = max(dot(nSunDirection, inNormal), 0.0);
     vec3 sunColor = sunIntensity * sunLightColor;
 
     // Compute ambient occlusion

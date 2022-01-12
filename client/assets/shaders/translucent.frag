@@ -9,7 +9,7 @@ in VS_OUTPUT {
     vec2 TexCoord;
     flat float Layer;
     vec3 Normal;
-    vec2 Light;
+    float Light;
 } IN;
 
 uniform float Alpha;
@@ -31,13 +31,12 @@ void main()
     vec3 inColor = texture(blockTextures, vec3(IN.TexCoord, IN.Layer)).xyz;
 
       // Compute sunlight (diffuse)
-    float sunLightLevel = IN.Light.g;
     vec3 nSunDirection = normalize((View * vec4(sunLightDirection, 0.0)).xyz);
-    float sunIntensity = max(dot(nSunDirection, IN.Normal), 0.0) * sunLightLevel;
+    float sunIntensity = max(dot(nSunDirection, IN.Normal), 0.0);
     vec3 sunColor = sunIntensity * sunLightColor;
  
     // Combine ambient and sunlight
-    float lightLevel = pow(IN.Light.r, 2);
+    float lightLevel = pow(IN.Light, 2);
     vec3 color = (ambientLightColor + sunColor + lightLevel) * inColor;
     
     // Calculate fog

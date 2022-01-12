@@ -8,7 +8,6 @@ pub const SOLID_MIN_ID: u32 = 256;
 pub const TRANSPARENT_MAX_ID: u32 = 511;
 
 pub const LIGHT_BIT_MASK: u32 = 0xF0000000;
-pub const SUNLIGHT_BIT_MASK: u32 = 0x0F000000;
 pub const KIND_BIT_MASK: u32 = 0x00000FFF;
 
 pub type Block = u32;
@@ -165,10 +164,6 @@ pub trait LightBlock: Copy + Clone + PartialEq + Eq {
     fn get_light(&self) -> u8;
 
     fn set_light(&mut self, light: u8);
-
-    fn get_sunlight(&self) -> u8;
-
-    fn set_sunlight(&mut self, light: u8);
 }
 
 impl LightBlock for Block {
@@ -178,14 +173,6 @@ impl LightBlock for Block {
 
     fn set_light(&mut self, light: u8) {
         *self = (*self & !LIGHT_BIT_MASK) | ((light as Block) << 28);
-    }
-
-    fn get_sunlight(&self) -> u8 {
-        ((self & SUNLIGHT_BIT_MASK) >> 24) as u8
-    }
-
-    fn set_sunlight(&mut self, light: u8) {
-        *self = (*self & !SUNLIGHT_BIT_MASK) | ((light as Block) << 24);
     }
 }
 

@@ -25,14 +25,13 @@ impl BlockVertex {
         texture_y: f32,
         texture_layer: f32,
         blocklight: u8,
-        sunlight: u8,
         normal: u8,
     ) -> BlockVertex {
         BlockVertex {
             position: (x, y, z).into(),
             texture: (texture_x, texture_y, texture_layer).into(),
             normal: normal.into(),
-            light: (blocklight | sunlight << 4).into(),
+            light: blocklight.into(),
         }
     }
 }
