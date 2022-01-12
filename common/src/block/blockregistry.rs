@@ -1,4 +1,4 @@
-use super::{block::AIR_BLOCK, Block};
+use super::Block;
 use crate::resource::*;
 use gamework::{video::color::ColorRGBu8, Assets};
 use log::*;
@@ -13,7 +13,16 @@ pub const FACE_YM: usize = 3;
 pub const FACE_ZP: usize = 4;
 pub const FACE_ZM: usize = 5;
 
+// Air is a special case with ID 0
+pub const AIR_BLOCK: u32 = 0;
+// Solid (not passable) blocks have an ID from 256 or higher (this partially overlaps with translucent block IDs)
+pub const SOLID_MIN_ID: u32 = 256;
+// Translucent blocks have an ID from 1 to 511
+pub const TRANSPARENT_MAX_ID: u32 = 511;
+
 pub const WATER_BLOCK: u32 = 1;
+pub const LEAVES_BLOCK: u32 = 257;
+
 pub const DIRT_BLOCK: u32 = 512;
 pub const GRASS_BLOCK: u32 = 513;
 pub const ROCK_BLOCK: u32 = 514;
@@ -27,7 +36,6 @@ pub const IRON_BLOCK: u32 = 521;
 pub const GOLD_BLOCK: u32 = 522;
 pub const ICE_BLOCK: u32 = 523;
 pub const BRICKS_BLOCK: u32 = 524;
-pub const GREEN_CONCRETE_BLOCK: u32 = 525;
 
 // Special block for world generation that should never be used in the world itself
 pub const IGNORE_BLOCK: u32 = std::u32::MAX;
@@ -111,6 +119,25 @@ impl BlockRegistry {
                 buildable: false,
                 resource_yield: vec![],
                 resource_cost: vec![],
+            },
+        );
+        blocks.insert(
+            LEAVES_BLOCK,
+            BlockDef {
+                name: "Leaves".to_string(),
+                color: ColorRGBu8::new(111, 153, 3),
+                textures: vec![
+                    "leaves".to_string(),
+                    "leaves".to_string(),
+                    "leaves".to_string(),
+                    "leaves".to_string(),
+                    "leaves".to_string(),
+                    "leaves".to_string(),
+                ],
+                light: 0,
+                buildable: true,
+                resource_yield: vec![(0, 1)],
+                resource_cost: vec![(0, 1)],
             },
         );
         blocks.insert(
@@ -360,26 +387,7 @@ impl BlockRegistry {
                 resource_cost: vec![(0, 1)],
             },
         );
-        blocks.insert(
-            GREEN_CONCRETE_BLOCK,
-            BlockDef {
-                name: "Green concrete".to_string(),
-                color: ColorRGBu8::new(126, 189, 49),
-                textures: vec![
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        let mut index = GREEN_CONCRETE_BLOCK + 1;
+        let mut index = BRICKS_BLOCK + 1;
         blocks.insert(
             index,
             BlockDef {
@@ -532,6 +540,26 @@ impl BlockRegistry {
                     "yellow_concrete".to_string(),
                     "yellow_concrete".to_string(),
                     "yellow_concrete".to_string(),
+                ],
+                light: 0,
+                buildable: true,
+                resource_yield: vec![(0, 1)],
+                resource_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Green concrete".to_string(),
+                color: ColorRGBu8::new(126, 189, 49),
+                textures: vec![
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
+                    "green_concrete".to_string(),
                 ],
                 light: 0,
                 buildable: true,

@@ -33,6 +33,7 @@ pub struct InGameState {
     gui: Gui<GuiRenderer>,
     resource_label: WidgetId,
     selected_label: WidgetId,
+    position_label: WidgetId,
     block_place_timer: f32,
     block_remove_timer: f32,
     profile_chart_id: WidgetId,
@@ -59,6 +60,13 @@ impl InGameState {
                 fixed_row(40.0),
                 fixed_row(10.0),
             ],
+        );
+        let position_label = gui.place(
+            gui.root_id(),
+            1,
+            1,
+            Box::new(Label::new("".to_string())),
+            CellAlignment::TopLeft,
         );
         let profile_chart_id = gui.place(
             gui.root_id(),
@@ -96,6 +104,7 @@ impl InGameState {
             gui,
             resource_label,
             selected_label,
+            position_label,
             block_remove_timer: 0.0,
             block_place_timer: 0.0,
             profile_chart_id,
@@ -483,8 +492,21 @@ impl State<GameContext> for InGameState {
             data.last_pos_update_time = Instant::now();
         }
 
-        // Check if the camera moved a chunk
+        // Show camera position
         let cam_cp = ChunkPos::from_world_pos(camera.position);
+        let text = format!(
+            "Position {},{},{} / Chunk {},{},{}",
+            camera.position.x as i16,
+            camera.position.y as i16,
+            camera.position.z as i16,
+            cam_cp.x,
+            cam_cp.y,
+            cam_cp.z
+        );
+        self.gui
+            .set_value(&self.position_label, GuiValue::String(text));
+
+        // Check if the camera moved a chunk
         let cam_chunk_col = ChunkColumnPos::from_chunk_pos(cam_cp);
         if cam_chunk_col != self.buffer_col {
             self.buffer_col = cam_chunk_col;

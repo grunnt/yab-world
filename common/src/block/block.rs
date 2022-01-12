@@ -1,12 +1,5 @@
 use crate::block::blockregistry::*;
 
-// Air is a special case with ID 0
-pub const AIR_BLOCK: u32 = 0;
-// Solid (not passable) blocks have an ID from 256 or higher (this partially overlaps with translucent block IDs)
-pub const SOLID_MIN_ID: u32 = 256;
-// Translucent blocks have an ID from 1 to 511
-pub const TRANSPARENT_MAX_ID: u32 = 511;
-
 pub const LIGHT_BIT_MASK: u32 = 0xF0000000;
 pub const KIND_BIT_MASK: u32 = 0x00000FFF;
 
@@ -50,8 +43,6 @@ pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
     fn sandstone_block() -> Self;
 
     fn bricks_block() -> Self;
-
-    fn green_concrete_block() -> Self;
 
     fn wood_block() -> Self;
 
@@ -127,9 +118,7 @@ impl BlockTrait for u32 {
     fn bricks_block() -> Self {
         BRICKS_BLOCK
     }
-    fn green_concrete_block() -> Self {
-        GREEN_CONCRETE_BLOCK
-    }
+
     fn wood_block() -> Self {
         WOOD_BLOCK
     }

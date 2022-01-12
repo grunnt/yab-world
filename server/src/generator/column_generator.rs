@@ -5,7 +5,7 @@ use common::world_type::GeneratorType;
 use std::i16;
 use std::sync::Arc;
 
-use super::ObjectGrid;
+use super::ObjectPlacer;
 use super::PregeneratedObject;
 
 pub struct ColumnGenerator {
@@ -13,8 +13,8 @@ pub struct ColumnGenerator {
     flat_generator: FlatGenerator,
     water_generator: WaterWorldGenerator,
     alien_generator: AlienGenerator,
-    poi_objects: ObjectGrid,
-    tree_objects: ObjectGrid,
+    poi_objects: ObjectPlacer,
+    tree_objects: ObjectPlacer,
 }
 
 impl ColumnGenerator {
@@ -28,8 +28,8 @@ impl ColumnGenerator {
             flat_generator: FlatGenerator::new(32, 36),
             water_generator: WaterWorldGenerator::new(seed),
             alien_generator: AlienGenerator::new(seed),
-            poi_objects: ObjectGrid::new(seed, poi_object_list, 1, 8, 0.4, false),
-            tree_objects: ObjectGrid::new(seed, tree_object_list, 0, 2, 0.4, true),
+            poi_objects: ObjectPlacer::new(seed, poi_object_list, 1, 32, 0.3, false),
+            tree_objects: ObjectPlacer::new_sized(seed, tree_object_list, 0, 0.3, true, 4),
         }
     }
 

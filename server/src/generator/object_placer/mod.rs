@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use common::{block::*, chunk::WORLD_HEIGHT_BLOCKS};
 use noise::*;
+use rand::{prelude::StdRng, RngCore};
 
 use super::{Generator, NoiseSource2D};
 
@@ -14,20 +15,20 @@ pub struct WorldObject {
     density: f64,
 }
 
-pub struct ObjectGrid {
+pub struct ObjectPlacer {
     grid_size: i16,
     grid_border_size: i16,
     object_density: f64,
     clustered_objects: bool,
     grid_x_noise: NoiseSource2D<Value>,
     grid_y_noise: NoiseSource2D<Value>,
-    fbm_density_noise: NoiseSource2D<Perlin>,
+    fbm_density_noise: NoiseSource2D<Fbm>,
     value_density_noise: NoiseSource2D<Value>,
     randomizer_noise: NoiseSource2D<Value>,
     pregenerated: Arc<Vec<PregeneratedObject>>,
 }
 
-impl ObjectGrid {
+impl ObjectPlacer {
     pub fn new(
         seed: u32,
         pregenerated: Arc<Vec<PregeneratedObject>>,
@@ -45,13 +46,31 @@ impl ObjectGrid {
                 max_object_size = object.size_y;
             }
         }
-        ObjectGrid {
-            grid_size: max_object_size as i16 + grid_border_size * 2 + object_border_size * 2,
+        ObjectPlacer::new_sized(
+            seed,
+            pregenerated,
+            grid_border_size,
+            object_density,
+            clustered_objects,
+            max_object_size as i16 + grid_border_size * 2 + object_border_size * 2,
+        )
+    }
+
+    pub fn new_sized(
+        seed: u32,
+        pregenerated: Arc<Vec<PregeneratedObject>>,
+        grid_border_size: i16,
+        object_density: f64,
+        clustered_objects: bool,
+        grid_size: i16,
+    ) -> Self {
+        ObjectPlacer {
+            grid_size,
             grid_border_size,
             object_density,
             grid_x_noise: NoiseSource2D::<Value>::new_value(seed, 0.0, 1.0),
             grid_y_noise: NoiseSource2D::<Value>::new_value(seed, 0.0, 1.0),
-            fbm_density_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0, 1.0),
+            fbm_density_noise: NoiseSource2D::<Fbm>::new_fbm(seed, 0.0, 1.0),
             value_density_noise: NoiseSource2D::<Value>::new_value(seed, 0.0, 1.0),
             randomizer_noise: NoiseSource2D::<Value>::new_value(seed, 1.0, std::i16::MAX as f64),
             pregenerated,
@@ -137,21 +156,23 @@ impl ObjectGrid {
         let bottom_block = pregenerated.get(x_rel, y_rel, 0);
         let place_foundation = bottom_block != Block::empty_block() && bottom_block != IGNORE_BLOCK;
         for z in from_z..z2 {
-            let z_rel = z - z1;
-            if z < z1 {
-                if place_foundation {
-                    if let Some(foundation_block) = pregenerated.foundation_block {
-                        blocks[z] = foundation_block;
+            if pregenerated.overwrite_non_empty || blocks[z] == AIR_BLOCK {
+                let z_rel = z - z1;
+                if z < z1 {
+                    if place_foundation {
+                        if let Some(foundation_block) = pregenerated.foundation_block {
+                            blocks[z] = foundation_block;
+                        }
                     }
-                }
-            } else {
-                let object_block = pregenerated.get(x_rel, y_rel, z_rel);
-                if object_block != IGNORE_BLOCK {
-                    blocks[z] = pregenerated.get(x_rel, y_rel, z_rel);
+                } else {
+                    let object_block = pregenerated.get(x_rel, y_rel, z_rel);
+                    if object_block != IGNORE_BLOCK {
+                        blocks[z] = pregenerated.get(x_rel, y_rel, z_rel);
+                    }
                 }
             }
         }
-        if pregenerated.overwrite_empty {
+        if pregenerated.overwrite_non_empty {
             for z in z2..WORLD_HEIGHT_BLOCKS as usize {
                 blocks[z] = Block::empty_block();
             }
@@ -169,7 +190,7 @@ pub struct PregeneratedObject {
     pub size_z: usize,
     pub foundation_block: Option<Block>,
     pub place_on_soil: bool,
-    pub overwrite_empty: bool,
+    pub overwrite_non_empty: bool,
     pub blocks: Vec<Block>,
 }
 
@@ -184,7 +205,7 @@ impl PregeneratedObject {
             size_z,
             foundation_block: None,
             place_on_soil: false,
-            overwrite_empty: false,
+            overwrite_non_empty: false,
             blocks: vec![Block::empty_block(); size_x * size_y * size_z],
         }
     }
@@ -257,6 +278,50 @@ impl PregeneratedObject {
             for ry in y1..y2 {
                 for rz in z1..z2 {
                     self.set(rx, ry, rz, block);
+                }
+            }
+        }
+    }
+
+    pub fn fill_sphere(&mut self, x: usize, y: usize, z: usize, range: usize, block: Block) {
+        let range_sq = (range * range) as isize;
+        for rx in x - range..x + range {
+            for ry in y - range..y + range {
+                for rz in z - range..z + range {
+                    let dx = rx as isize - x as isize;
+                    let dy = ry as isize - y as isize;
+                    let dz = rz as isize - z as isize;
+                    let dist_sq = dx * dx + dy * dy + dz * dz;
+                    if dist_sq <= range_sq {
+                        self.set(rx, ry, rz, block);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn spray_sphere(
+        &mut self,
+        x: usize,
+        y: usize,
+        z: usize,
+        range: usize,
+        block: Block,
+        random: &mut StdRng,
+    ) {
+        let range_sq = (range * range) as isize;
+        for rx in x - range..x + range {
+            for ry in y - range..y + range {
+                for rz in z - range..z + range {
+                    let dx = rx as isize - x as isize;
+                    let dy = ry as isize - y as isize;
+                    let dz = rz as isize - z as isize;
+                    let dist_sq = dx * dx + dy * dy + dz * dz;
+                    if dist_sq <= range_sq {
+                        if random.next_u32() % 10 > 2 {
+                            self.set(rx, ry, rz, block);
+                        }
+                    }
                 }
             }
         }

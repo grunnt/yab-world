@@ -28,7 +28,7 @@ uniform float fogEnd;
 
 void main()
 {
-    vec3 inColor = texture(blockTextures, vec3(IN.TexCoord, IN.Layer)).xyz;
+    vec4 inColor = texture(blockTextures, vec3(IN.TexCoord, IN.Layer));
 
       // Compute sunlight (diffuse)
     vec3 nSunDirection = normalize((View * vec4(sunLightDirection, 0.0)).xyz);
@@ -37,12 +37,12 @@ void main()
  
     // Combine ambient and sunlight
     float lightLevel = pow(IN.Light, 2);
-    vec3 color = (ambientLightColor + sunColor + lightLevel) * inColor;
+    vec3 color = (ambientLightColor + sunColor + lightLevel) * inColor.xyz;
     
     // Calculate fog
     float fogDistance = length(IN.Position);
-    float fogAmount = pow(1.0 - clamp((fogEnd - fogDistance) / (fogEnd - fogStart), 0.0, 1.0), 2);
+    float fogAmount = pow(1.0 - clamp((fogEnd - fogDistance) / (fogEnd - fogStart), 0.0, 1.0), 4);
    
     // Mix fog into color
-    fragColor = vec4(mix(color, fogColor, fogAmount), Alpha);    
+    fragColor = vec4(mix(color, fogColor, fogAmount), inColor.w);    
 }

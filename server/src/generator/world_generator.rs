@@ -1,4 +1,3 @@
-use common::block::*;
 use common::chunk::*;
 use common::world_type::GeneratorType;
 use crossbeam::channel::*;
@@ -9,8 +8,8 @@ use std::thread;
 
 use crate::generator::column_generator::ColumnGenerator;
 use crate::generator::ObjectGenerator;
-use crate::generator::PregeneratedObject;
 use crate::generator::TowerGenerator;
+use crate::generator::TreeGenerator;
 
 pub struct WorldGenerator {
     pub worker_count: usize,
@@ -29,13 +28,14 @@ impl WorldGenerator {
             }
             Arc::new(result)
         };
-        let tree_object_list = Arc::new(vec![PregeneratedObject::solid(
-            1,
-            1,
-            16,
-            Block::log_block(),
-            Block::dirt_block(),
-        )]);
+        let tree_object_list = {
+            let mut result = Vec::new();
+            let mut gen = TreeGenerator::new(seed);
+            for _ in 0..10 {
+                result.push(gen.generate());
+            }
+            Arc::new(result)
+        };
         let worker_count = num_cpus::get() - 1;
         info!("Initializing {} generator workers", worker_count);
         // Start chunk column generator threads

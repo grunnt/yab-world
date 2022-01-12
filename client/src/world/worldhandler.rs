@@ -386,7 +386,7 @@ impl WorldHandler {
                         (wcy - chunk.pos.y as f32 * CHUNK_SIZE as f32).floor() as usize,
                         (iz - chunk.pos.z as f32 * CHUNK_SIZE as f32).floor() as usize,
                     );
-                    if b.is_opaque() || (hit_water && b.kind() == Block::water_block()) {
+                    if b.is_solid() || (hit_water && b.kind() == Block::water_block()) {
                         block = Some(b);
                     }
                 }
