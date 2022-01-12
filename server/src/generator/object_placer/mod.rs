@@ -229,13 +229,13 @@ impl PregeneratedObject {
     ) {
         for rz in z1..z2 {
             for rx in x1..x2 {
-                if !checkerboard || rx % 2 == 0 {
+                if !checkerboard || rx % 2 != 0 {
                     self.set(rx, y1, rz, block);
                     self.set(rx, y2 - 1, rz, block);
                 }
             }
             for ry in y1..y2 {
-                if !checkerboard || ry % 2 == 0 {
+                if !checkerboard || ry % 2 != 0 {
                     self.set(x1, ry, rz, block);
                     self.set(x2 - 1, ry, rz, block);
                 }

@@ -24,7 +24,7 @@ impl WorldGenerator {
         let poi_object_list = {
             let mut result = Vec::new();
             let mut gen = TowerGenerator::new(seed);
-            for _ in 0..5 {
+            for _ in 0..10 {
                 result.push(gen.generate());
             }
             Arc::new(result)

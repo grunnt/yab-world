@@ -80,22 +80,22 @@ impl ObjectGenerator for TowerGenerator {
             );
         }
         // Top floor
-        let floor_z = floor_count * floor_height;
+        let top_floor_z = floor_count * floor_height;
         tower.set_filled_rectangle(
             1,
             1,
-            floor_z,
+            top_floor_z,
             size_xy - 1,
             size_xy - 1,
-            floor_z + 1,
+            top_floor_z + 1,
             Block::bricks_block(),
         );
         // Create a cellar by moving the tower down a bit?
-        // if self.random.next_u32() % 4 == 0 {
-        //     tower.anchor_z = floor_height + 4;
-        // } else {
-        tower.anchor_z = 1;
-        //}
+        if self.random.next_u32() % 4 == 0 {
+            tower.anchor_z = floor_height + 1;
+        } else {
+            tower.anchor_z = 1;
+        }
         // Cut out a door at the anchor position
         tower.anchor_x = size_xy / 2;
         tower.anchor_y = 0;
@@ -117,6 +117,34 @@ impl ObjectGenerator for TowerGenerator {
             tower.anchor_y + 3,
             tower.anchor_z + 3,
             Block::empty_block(),
+        );
+        // Cut out space for a ladder (which is not implemented yet)
+        tower.set_filled_rectangle(
+            tower.anchor_x,
+            size_xy - 3,
+            1,
+            tower.anchor_x + 1,
+            size_xy - 2,
+            tower_top_z,
+            Block::empty_block(),
+        );
+        // Cut out windows on the top floor
+        tower.set_rectangle(
+            0,
+            0,
+            top_floor_z - floor_height + 3,
+            size_xy,
+            size_xy,
+            top_floor_z - floor_height + 4,
+            Block::empty_block(),
+            true,
+        );
+        // And add a lamp to the top floor
+        tower.set(
+            size_xy / 2,
+            size_xy / 2,
+            top_floor_z - 1,
+            Block::lamp_block(),
         );
         tower
     }
