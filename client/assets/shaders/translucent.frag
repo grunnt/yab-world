@@ -17,7 +17,6 @@ uniform float Alpha;
 uniform mat4 View;
 
 // Lighting
-uniform vec3 ambientLightColor;
 uniform vec3 sunLightDirection;
 uniform vec3 sunLightColor;
 
@@ -30,14 +29,20 @@ void main()
 {
     vec4 inColor = texture(blockTextures, vec3(IN.TexCoord, IN.Layer));
 
-      // Compute sunlight (diffuse)
+    // Compute sunlight (diffuse)
     vec3 nSunDirection = normalize((View * vec4(sunLightDirection, 0.0)).xyz);
     float sunIntensity = max(dot(nSunDirection, IN.Normal), 0.0);
-    vec3 sunColor = sunIntensity * sunLightColor;
- 
-    // Combine ambient and sunlight
-    float lightLevel = pow(IN.Light, 2);
-    vec3 color = (ambientLightColor + sunColor + lightLevel) * inColor.xyz;
+    vec3 sunLight = 0.7 * sunIntensity * sunLightColor * inColor.xyz;
+
+     // Calculate ambient light
+    vec3 ambientLight = vec3(0.3 * inColor.xyz);
+
+    // Calculate lamp light
+    float lampLightLevel = pow(IN.Light, 2);
+    vec3 lampLight = inColor.xyz * lampLightLevel;
+
+    // Combine light into final fragment color
+    vec3 color = ambientLight + sunLight + lampLight * inColor.xyz;
     
     // Calculate fog
     float fogDistance = length(IN.Position);

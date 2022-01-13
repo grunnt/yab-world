@@ -24,7 +24,7 @@ impl SpriteBatcher {
         texture: TextureAtlas,
     ) -> Self {
         let capacity = 512;
-        let program = Program::load(gl, assets, shader_files).unwrap();
+        let program = Program::load(gl, assets, shader_files, "spritebatcher".to_string()).unwrap();
         program.set_used();
         let projection_uniform = program.get_uniform("projection");
         if let Some(uniform) = program.get_uniform("textureAtlas") {

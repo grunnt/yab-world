@@ -5,7 +5,7 @@ use gl;
 use nalgebra_glm::*;
 use rand::Rng;
 
-const SSAO_KERNEL_SIZE: usize = 64;
+const SSAO_KERNEL_SIZE: usize = 128;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
@@ -35,7 +35,6 @@ pub struct DeferredPipeline {
     lights_buffer: Texture,
     view_uniform: Option<Uniform>,
     projection_uniform: Option<Uniform>,
-    ambient_col_uniform: Option<Uniform>,
     light_dir_uniform: Option<Uniform>,
     light_col_uniform: Option<Uniform>,
     fog_col_uniform: Option<Uniform>,
@@ -59,6 +58,7 @@ impl DeferredPipeline {
             gl,
             assets,
             vec!["shaders/deferred.vert", "shaders/deferred.frag"],
+            "deferred".to_string(),
         )?;
         program.set_used();
         if let Some(uniform) = program.get_uniform("gPosition") {
@@ -77,23 +77,25 @@ impl DeferredPipeline {
             uniform.set_uniform_1i(4);
         }
         if let Some(uniform) = program.get_uniform("ssaoKernel") {
+            // Based on https://learnopengl.com/Advanced-Lighting/SSAO
             let mut kernel = Vec::new();
             let mut rng = rand::thread_rng();
             for i in 0..SSAO_KERNEL_SIZE {
                 let scale = i as f32 / SSAO_KERNEL_SIZE as f32;
-                let x: f32 = rng.gen();
-                let y: f32 = rng.gen();
-                let z: f32 = rng.gen();
-                let mut v = Vec3::new(x - 0.5, y - 0.5, z - 0.5);
-                // Make sure more points are closer to the origin
-                v *= scale * scale;
-                kernel.push(v);
+                kernel.push(
+                    Vec3::new(
+                        rng.gen_range(-1.0, 1.0),
+                        rng.gen_range(-1.0, 1.0),
+                        rng.gen_range(0.0, 1.0),
+                    )
+                    .normalize()
+                        * scale,
+                );
             }
             uniform.set_uniform_3fv(&kernel);
         }
         let view_uniform = program.get_uniform("View");
         let projection_uniform = program.get_uniform("Projection");
-        let ambient_col_uniform = program.get_uniform("ambientLightColor");
         let light_dir_uniform = program.get_uniform("sunLightDirection");
         let light_col_uniform = program.get_uniform("sunLightColor");
         let fog_col_uniform = program.get_uniform("fogColor");
@@ -179,7 +181,6 @@ impl DeferredPipeline {
             lights_buffer,
             view_uniform,
             projection_uniform,
-            ambient_col_uniform,
             light_dir_uniform,
             light_col_uniform,
             fog_col_uniform,
@@ -205,7 +206,6 @@ impl DeferredPipeline {
         camera: &PerspectiveCamera,
         width: u32,
         height: u32,
-        ambient_col: &Vec3,
         sun_dir: &Vec3,
         sun_col: &Vec3,
         fog_col: &Vec3,
@@ -219,9 +219,6 @@ impl DeferredPipeline {
         }
         if let Some(uniform) = &self.projection_uniform {
             uniform.set_uniform_matrix_4fv(camera.get_projection());
-        }
-        if let Some(uniform) = &self.ambient_col_uniform {
-            uniform.set_uniform_3f(ambient_col);
         }
         if let Some(uniform) = &self.light_dir_uniform {
             uniform.set_uniform_3f(sun_dir);

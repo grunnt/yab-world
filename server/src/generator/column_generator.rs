@@ -28,8 +28,8 @@ impl ColumnGenerator {
             flat_generator: FlatGenerator::new(32, 36),
             water_generator: WaterWorldGenerator::new(seed),
             alien_generator: AlienGenerator::new(seed),
-            poi_objects: ObjectPlacer::new(seed, poi_object_list, 1, 32, 0.3, false),
-            tree_objects: ObjectPlacer::new_sized(seed, tree_object_list, 0, 0.3, true, 4),
+            poi_objects: ObjectPlacer::new(seed, poi_object_list, 32, 1, 0.3, false, false),
+            tree_objects: ObjectPlacer::new(seed, tree_object_list, 15, -3, 0.3, true, true),
         }
     }
 

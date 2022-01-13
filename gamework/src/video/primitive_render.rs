@@ -22,6 +22,7 @@ impl PrimitiveRender {
             gl,
             assets,
             vec!["shaders/primitive.vert", "shaders/primitive.frag"],
+            "primitive".to_string(),
         )
         .unwrap();
         program.set_used();

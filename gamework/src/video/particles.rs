@@ -32,6 +32,7 @@ impl ParticleSystem {
             gl,
             assets,
             vec!["shaders/particle.vert", "shaders/particle.frag"],
+            "particle".to_string(),
         )
         .unwrap();
 

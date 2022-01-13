@@ -19,6 +19,7 @@ impl Crosshair {
             gl,
             assets,
             vec!["shaders/simple.vert", "shaders/simple.frag"],
+            "simple".to_string(),
         )?;
         program.set_used();
         let model_uniform = program.get_uniform("Model");

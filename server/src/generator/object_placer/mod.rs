@@ -17,7 +17,7 @@ pub struct WorldObject {
 
 pub struct ObjectPlacer {
     grid_size: i16,
-    grid_border_size: i16,
+    grid_margin: i16,
     object_density: f64,
     clustered_objects: bool,
     grid_x_noise: NoiseSource2D<Value>,
@@ -26,47 +26,22 @@ pub struct ObjectPlacer {
     value_density_noise: NoiseSource2D<Value>,
     randomizer_noise: NoiseSource2D<Value>,
     pregenerated: Arc<Vec<PregeneratedObject>>,
+    overlapping: bool,
 }
 
 impl ObjectPlacer {
     pub fn new(
         seed: u32,
         pregenerated: Arc<Vec<PregeneratedObject>>,
-        grid_border_size: i16,
-        object_border_size: i16,
-        object_density: f64,
-        clustered_objects: bool,
-    ) -> Self {
-        let mut max_object_size = 1;
-        for object in pregenerated.iter() {
-            if object.size_x > max_object_size {
-                max_object_size = object.size_x;
-            }
-            if object.size_y > max_object_size {
-                max_object_size = object.size_y;
-            }
-        }
-        ObjectPlacer::new_sized(
-            seed,
-            pregenerated,
-            grid_border_size,
-            object_density,
-            clustered_objects,
-            max_object_size as i16 + grid_border_size * 2 + object_border_size * 2,
-        )
-    }
-
-    pub fn new_sized(
-        seed: u32,
-        pregenerated: Arc<Vec<PregeneratedObject>>,
-        grid_border_size: i16,
-        object_density: f64,
-        clustered_objects: bool,
         grid_size: i16,
+        grid_margin: i16,
+        object_density: f64,
+        clustered_objects: bool,
+        overlapping: bool,
     ) -> Self {
         ObjectPlacer {
             grid_size,
-            grid_border_size,
+            grid_margin,
             object_density,
             grid_x_noise: NoiseSource2D::<Value>::new_value(seed, 0.0, 1.0),
             grid_y_noise: NoiseSource2D::<Value>::new_value(seed, 0.0, 1.0),
@@ -75,6 +50,7 @@ impl ObjectPlacer {
             randomizer_noise: NoiseSource2D::<Value>::new_value(seed, 1.0, std::i16::MAX as f64),
             pregenerated,
             clustered_objects,
+            overlapping,
         }
     }
 
@@ -85,30 +61,50 @@ impl ObjectPlacer {
         blocks: &mut Vec<Block>,
         generator: &mut dyn Generator,
     ) {
-        let grid_x = (x / self.grid_size) * self.grid_size;
-        let grid_y = (y / self.grid_size) * self.grid_size;
+        let grid_x = x.div_euclid(self.grid_size) * self.grid_size;
+        let grid_y = y.div_euclid(self.grid_size) * self.grid_size;
+        if self.overlapping {
+            for gx in grid_x - 1..grid_x + 2 {
+                for gy in grid_y - 1..grid_y + 2 {
+                    self.place_grid_object(gx, gy, x, y, generator, blocks);
+                }
+            }
+        } else {
+            self.place_grid_object(grid_x, grid_y, x, y, generator, blocks);
+        }
+    }
+
+    fn place_grid_object(
+        &mut self,
+        grid_x: i16,
+        grid_y: i16,
+        x: i16,
+        y: i16,
+        generator: &mut dyn Generator,
+        blocks: &mut Vec<u32>,
+    ) {
         let random = self.randomizer_noise.get(grid_x as f64, grid_y as f64, 1.0);
         let pregenerated = self
             .pregenerated
             .get(random as usize % self.pregenerated.len())
             .unwrap();
         let anchor_world_x = grid_x
-            + self.grid_border_size
+            + self.grid_margin
             + (self
                 .grid_x_noise
                 .get(grid_x as f64 + 0.123, grid_y as f64 + 50.665, 1.0)
                 * (self.grid_size as f64
                     - pregenerated.size_x as f64
-                    - self.grid_border_size as f64 * 2.0)) as i16
+                    - self.grid_margin as f64 * 2.0)) as i16
             + pregenerated.anchor_x as i16;
         let anchor_world_y = grid_y
-            + self.grid_border_size
+            + self.grid_margin
             + (self
                 .grid_y_noise
                 .get(grid_x as f64 - 102.4, grid_y as f64 + 553.1, 1.0)
                 * (self.grid_size as f64
                     - pregenerated.size_y as f64
-                    - self.grid_border_size as f64 * 2.0)) as i16
+                    - self.grid_margin as f64 * 2.0)) as i16
             + pregenerated.anchor_y as i16;
         let x1 = anchor_world_x - pregenerated.anchor_x as i16;
         let y1 = anchor_world_y - pregenerated.anchor_y as i16;
@@ -118,7 +114,6 @@ impl ObjectPlacer {
             // Outside of this object area
             return;
         }
-        // TODO try speedup by basing density check on grid_x, grid_y (which may look weird)
         let density_noise = if self.clustered_objects {
             self.fbm_density_noise
                 .get(grid_x as f64, grid_y as f64, 0.01)

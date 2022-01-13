@@ -35,6 +35,7 @@ impl SkyDome {
             gl,
             assets,
             vec!["shaders/skydome.vert", "shaders/skydome.frag"],
+            "skydome".to_string(),
         )
         .unwrap();
         program.set_used();

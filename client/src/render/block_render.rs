@@ -19,9 +19,7 @@ pub struct BlockRenderer {
     t_model_uniform: Option<Uniform>,
     t_view_uniform: Option<Uniform>,
     t_projection_uniform: Option<Uniform>,
-    t_alpha_uniform: Option<Uniform>,
     t_z_offset_uniform: Option<Uniform>,
-    ambient_col_uniform: Option<Uniform>,
     light_dir_uniform: Option<Uniform>,
     light_col_uniform: Option<Uniform>,
     fog_col_uniform: Option<Uniform>,
@@ -41,7 +39,12 @@ impl BlockRenderer {
         block_registry: &BlockRegistry,
     ) -> Result<BlockRenderer, failure::Error> {
         // Normal rendering
-        let program = Program::load(gl, assets, vec!["shaders/block.vert", "shaders/block.frag"])?;
+        let program = Program::load(
+            gl,
+            assets,
+            vec!["shaders/block.vert", "shaders/block.frag"],
+            "block".to_string(),
+        )?;
         program.set_used();
         let model_uniform = program.get_uniform("Model");
         let view_uniform = program.get_uniform("View");
@@ -68,14 +71,13 @@ impl BlockRenderer {
             gl,
             assets,
             vec!["shaders/translucent.vert", "shaders/translucent.frag"],
+            "translucent".to_string(),
         )?;
         t_program.set_used();
         let t_model_uniform = t_program.get_uniform("Model");
         let t_view_uniform = t_program.get_uniform("View");
         let t_projection_uniform = t_program.get_uniform("Projection");
-        let t_alpha_uniform = t_program.get_uniform("Alpha");
         let t_z_offset_uniform = t_program.get_uniform("zOffset");
-        let ambient_col_uniform = t_program.get_uniform("ambientLightColor");
         let light_dir_uniform = t_program.get_uniform("sunLightDirection");
         let light_col_uniform = t_program.get_uniform("sunLightColor");
         let fog_col_uniform = t_program.get_uniform("fogColor");
@@ -100,9 +102,7 @@ impl BlockRenderer {
             t_model_uniform,
             t_view_uniform,
             t_projection_uniform,
-            t_alpha_uniform,
             t_z_offset_uniform,
-            ambient_col_uniform,
             light_dir_uniform,
             light_col_uniform,
             fog_col_uniform,
@@ -213,7 +213,6 @@ impl BlockRenderer {
         gl: &gl::Gl,
         model: Mat4,
         camera: &PerspectiveCamera,
-        ambient_col: &Vec3,
         sun_dir: &Vec3,
         sun_col: &Vec3,
         fog_col: &Vec3,
@@ -229,12 +228,6 @@ impl BlockRenderer {
         }
         if let Some(uniform) = &self.t_projection_uniform {
             uniform.set_uniform_matrix_4fv(camera.get_projection());
-        }
-        if let Some(uniform) = &self.t_alpha_uniform {
-            uniform.set_uniform_1f(0.85);
-        }
-        if let Some(uniform) = &self.ambient_col_uniform {
-            uniform.set_uniform_3f(ambient_col);
         }
         if let Some(uniform) = &self.light_dir_uniform {
             uniform.set_uniform_3f(sun_dir);

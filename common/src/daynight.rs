@@ -25,9 +25,7 @@ pub struct DayNight {
     light_gradient: Gradient<LinSrgb>,
     sky_gradient: Gradient<LinSrgb>,
     fog_gradient: Gradient<LinSrgb>,
-    ambient_gradient: Gradient<LinSrgb>,
     sunlight_strength: f32,
-    ambient_strength: f32,
 }
 
 impl DayNight {
@@ -48,10 +46,6 @@ impl DayNight {
         let night_fog = LinSrgb::new(0.01, 0.01, 0.02);
         let dawn_fog = LinSrgb::new(0.3, 0.1, 0.15);
         let day_fog = LinSrgb::new(0.25, 0.25, 0.35);
-
-        let night_ambient = LinSrgb::new(0.2, 0.2, 0.3);
-        let dawn_ambient = LinSrgb::new(0.3, 0.1, 0.2);
-        let day_ambient = LinSrgb::new(0.3, 0.3, 0.27);
 
         let sun_gradient = Gradient::with_domain(vec![
             (0.0, night_sun),
@@ -109,22 +103,6 @@ impl DayNight {
             (NIGHT_START_TIME, night_fog),
             (1.0, night_fog),
         ]);
-        let ambient_gradient = Gradient::with_domain(vec![
-            (0.0, night_ambient),
-            (DAWN_START_TIME, night_ambient),
-            (
-                DAWN_START_TIME + (DAY_START_TIME - DAWN_START_TIME) / 2.0,
-                dawn_ambient,
-            ),
-            (DAY_START_TIME, day_ambient),
-            (DUSK_START_TIME, day_ambient),
-            (
-                DUSK_START_TIME + (NIGHT_START_TIME - DUSK_START_TIME) / 2.0,
-                dawn_ambient,
-            ),
-            (NIGHT_START_TIME, night_ambient),
-            (1.0, night_ambient),
-        ]);
         DayNight {
             day_duration_s,
             time: 0.0,
@@ -135,9 +113,7 @@ impl DayNight {
             light_gradient,
             sky_gradient,
             fog_gradient,
-            ambient_gradient,
             sunlight_strength: 1.0,
-            ambient_strength: 0.1,
         }
     }
 
@@ -211,10 +187,5 @@ impl DayNight {
     pub fn get_fog_color(&self) -> Vec3 {
         let color = self.fog_gradient.get(self.time);
         Vec3::new(color.red, color.green, color.blue)
-    }
-
-    pub fn get_ambient_color(&self) -> Vec3 {
-        let color = self.ambient_gradient.get(self.time);
-        Vec3::new(color.red, color.green, color.blue) * self.ambient_strength
     }
 }

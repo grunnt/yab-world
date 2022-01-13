@@ -36,21 +36,31 @@ pub struct Uniform {
 }
 
 pub struct Program {
+    name: String,
     gl: gl::Gl,
     id: gl::types::GLuint,
 }
 
 impl Program {
-    pub fn load(gl: &gl::Gl, assets: &Assets, filenames: Vec<&str>) -> Result<Program, Error> {
+    pub fn load(
+        gl: &gl::Gl,
+        assets: &Assets,
+        filenames: Vec<&str>,
+        name: String,
+    ) -> Result<Program, Error> {
         let mut shaders = Vec::new();
         for filename in filenames {
             let shader = Shader::load(gl, assets, filename)?;
             shaders.push(shader);
         }
-        Program::from_shaders(&gl, &shaders).map_err(|message| Error::LinkError { message })
+        Program::from_shaders(&gl, &shaders, name).map_err(|message| Error::LinkError { message })
     }
 
-    pub fn from_shaders(gl: &gl::Gl, shaders: &Vec<Shader>) -> Result<Program, String> {
+    pub fn from_shaders(
+        gl: &gl::Gl,
+        shaders: &Vec<Shader>,
+        name: String,
+    ) -> Result<Program, String> {
         let program_id = unsafe { gl.CreateProgram() };
 
         for shader in shaders {
@@ -95,6 +105,7 @@ impl Program {
         }
 
         Ok(Program {
+            name,
             gl: gl.clone(),
             id: program_id,
         })
@@ -127,7 +138,10 @@ impl Program {
         };
 
         if location == -1 {
-            warn!("missing uniform requested: {}", uniform_name);
+            warn!(
+                "missing uniform {} requested for shader {}",
+                uniform_name, self.name
+            );
             return None;
         }
 

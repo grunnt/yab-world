@@ -15,8 +15,8 @@ uniform sampler2D gRandom;
 // SSAO
 const int SSAO_KERNEL_SIZE = 64;
 uniform vec3 ssaoKernel[SSAO_KERNEL_SIZE];
-const float ssaoSampleRad = 0.5; 
-const float ssaoBias = 0.15;
+const float ssaoSampleRad = 0.35; 
+const float ssaoBias = 0.025;
 uniform vec2 ssaoTextureScale;
 
 // Projection
@@ -24,7 +24,6 @@ uniform mat4 View;
 uniform mat4 Projection;
 
 // Lighting
-uniform vec3 ambientLightColor;
 uniform vec3 sunLightDirection;
 uniform vec3 sunLightColor;
 
@@ -47,7 +46,7 @@ void main()
     // Compute sunlight (diffuse)
     vec3 nSunDirection = normalize((View * vec4(sunLightDirection, 0.0)).xyz);
     float sunIntensity = max(dot(nSunDirection, inNormal), 0.0);
-    vec3 sunColor = sunIntensity * sunLightColor;
+    vec3 sunLight = 0.7 * sunIntensity * sunLightColor * inColor;
 
     // Compute ambient occlusion
     vec3 Tangent = normalize(inRandom - inNormal * dot(inRandom, inNormal));
@@ -68,9 +67,15 @@ void main()
     }
     ao = 1.0 - ao / SSAO_KERNEL_SIZE;
 
+    // Calculate ambient light
+    vec3 ambientLight = vec3(0.3 * inColor * ao);
+
+    // Calculate lamp light
+    float lampLightLevel = pow(inLight.r, 2);
+    vec3 lampLight = inColor * lampLightLevel;
+
     // Combine ambient and sunlight
-    float lightLevel = pow(inLight.r, 2);
-    vec3 color = (ao * (ambientLightColor + sunColor) + lightLevel) * inColor;
+    vec3 color = ambientLight + (sunLight * ao) + lampLight;
 
     // Calculate fog
     float fogDistance = length(inFragPos);

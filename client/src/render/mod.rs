@@ -117,10 +117,9 @@ impl Rendering {
 
         self.deferred.unbind();
 
-        let (render_back_color, render_ambient_color, fog_start, fog_end) = if in_water {
+        let (render_back_color, fog_start, fog_end) = if in_water {
             (
                 self.underwater_color,
-                self.underwater_color * 0.5,
                 0.0,
                 if self.fog_active {
                     self.water_fog_distance
@@ -136,7 +135,6 @@ impl Rendering {
             };
             (
                 data.daynight.get_fog_color(),
-                data.daynight.get_ambient_color(),
                 fog_dist * 0.1,
                 fog_dist * 0.9,
             )
@@ -147,7 +145,6 @@ impl Rendering {
             &self.camera,
             context.video().width(),
             context.video().height(),
-            &render_ambient_color,
             &data.daynight.get_light_angle(),
             &data.daynight.get_light_color(),
             &render_back_color,
@@ -169,7 +166,6 @@ impl Rendering {
             &self.gl,
             Mat4::identity(),
             &self.camera,
-            &render_ambient_color,
             &data.daynight.get_light_angle(),
             &data.daynight.get_light_color(),
             &render_back_color,
