@@ -61,12 +61,20 @@ impl ObjectPlacer {
         blocks: &mut Vec<Block>,
         generator: &mut dyn Generator,
     ) {
-        let grid_x = x.div_euclid(self.grid_size) * self.grid_size;
-        let grid_y = y.div_euclid(self.grid_size) * self.grid_size;
+        let grid_x = (x / self.grid_size) * self.grid_size;
+        let grid_y = (y / self.grid_size) * self.grid_size;
         if self.overlapping {
-            for gx in grid_x - 1..grid_x + 2 {
-                for gy in grid_y - 1..grid_y + 2 {
-                    self.place_grid_object(gx, gy, x, y, generator, blocks);
+            // If the object may cross the grid cell border we need to check its neighbours as well
+            for dgx in -1..2 {
+                for dgy in -1..2 {
+                    self.place_grid_object(
+                        grid_x + dgx * self.grid_size,
+                        grid_y + dgy * self.grid_size,
+                        x,
+                        y,
+                        generator,
+                        blocks,
+                    );
                 }
             }
         } else {
@@ -88,24 +96,31 @@ impl ObjectPlacer {
             .pregenerated
             .get(random as usize % self.pregenerated.len())
             .unwrap();
-        let anchor_world_x = grid_x
-            + self.grid_margin
+        let (grid_start_x, grid_start_y, grid_range_x, grid_range_y) = if self.overlapping {
+            (
+                grid_x + self.grid_margin,
+                grid_y + self.grid_margin,
+                self.grid_size as f64 - self.grid_margin as f64 * 2.0,
+                self.grid_size as f64 - self.grid_margin as f64 * 2.0,
+            )
+        } else {
+            (
+                grid_x + self.grid_margin + pregenerated.anchor_x as i16,
+                grid_y + self.grid_margin + pregenerated.anchor_y as i16,
+                self.grid_size as f64 - pregenerated.size_x as f64 - self.grid_margin as f64 * 2.0,
+                self.grid_size as f64 - pregenerated.size_y as f64 - self.grid_margin as f64 * 2.0,
+            )
+        };
+        let anchor_world_x = grid_start_x
             + (self
                 .grid_x_noise
                 .get(grid_x as f64 + 0.123, grid_y as f64 + 50.665, 1.0)
-                * (self.grid_size as f64
-                    - pregenerated.size_x as f64
-                    - self.grid_margin as f64 * 2.0)) as i16
-            + pregenerated.anchor_x as i16;
-        let anchor_world_y = grid_y
-            + self.grid_margin
+                * grid_range_x) as i16;
+        let anchor_world_y = grid_start_y
             + (self
                 .grid_y_noise
                 .get(grid_x as f64 - 102.4, grid_y as f64 + 553.1, 1.0)
-                * (self.grid_size as f64
-                    - pregenerated.size_y as f64
-                    - self.grid_margin as f64 * 2.0)) as i16
-            + pregenerated.anchor_y as i16;
+                * grid_range_y) as i16;
         let x1 = anchor_world_x - pregenerated.anchor_x as i16;
         let y1 = anchor_world_y - pregenerated.anchor_y as i16;
         let x2 = x1 + pregenerated.size_x as i16;
@@ -114,12 +129,18 @@ impl ObjectPlacer {
             // Outside of this object area
             return;
         }
+
+        // println!(
+        //     "grid {},{} anchor {},{} for {},{}",
+        //     grid_x, grid_y, anchor_world_x, anchor_world_y, x, y
+        // );
+
         let density_noise = if self.clustered_objects {
             self.fbm_density_noise
-                .get(grid_x as f64, grid_y as f64, 0.01)
+                .get(anchor_world_x as f64, anchor_world_y as f64, 0.01)
         } else {
             self.value_density_noise
-                .get(grid_x as f64, grid_y as f64, 1.0)
+                .get(anchor_world_x as f64, anchor_world_y as f64, 1.0)
         };
         if density_noise > self.object_density {
             return;
