@@ -46,7 +46,7 @@ void main()
     // Compute sunlight (diffuse)
     vec3 nSunDirection = normalize((View * vec4(sunLightDirection, 0.0)).xyz);
     float sunIntensity = max(dot(nSunDirection, inNormal), 0.0);
-    vec3 sunLight = 0.7 * sunIntensity * sunLightColor * inColor;
+    vec3 sunLight = sunIntensity * sunLightColor * inColor;
 
     // Compute ambient occlusion
     vec3 Tangent = normalize(inRandom - inNormal * dot(inRandom, inNormal));
@@ -68,7 +68,7 @@ void main()
     ao = 1.0 - ao / SSAO_KERNEL_SIZE;
 
     // Calculate ambient light
-    vec3 ambientLight = vec3(0.3 * inColor * ao);
+    vec3 ambientLight = vec3(0.15 * inColor * ao);
 
     // Calculate lamp light
     float lampLightLevel = pow(inLight.r, 2);

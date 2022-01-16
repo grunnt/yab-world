@@ -32,10 +32,10 @@ void main()
     // Compute sunlight (diffuse)
     vec3 nSunDirection = normalize((View * vec4(sunLightDirection, 0.0)).xyz);
     float sunIntensity = max(dot(nSunDirection, IN.Normal), 0.0);
-    vec3 sunLight = 0.7 * sunIntensity * sunLightColor * inColor.xyz;
+    vec3 sunLight = sunIntensity * sunLightColor * inColor.xyz;
 
      // Calculate ambient light
-    vec3 ambientLight = vec3(0.3 * inColor.xyz);
+    vec3 ambientLight = vec3(0.15 * inColor.xyz);
 
     // Calculate lamp light
     float lampLightLevel = pow(IN.Light, 2);

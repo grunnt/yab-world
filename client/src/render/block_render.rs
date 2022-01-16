@@ -273,6 +273,7 @@ impl BlockRenderer {
             mesh_count = mesh_count + 1;
         }
         unsafe {
+            gl.Enable(gl::CULL_FACE);
             gl.Disable(gl::FRAMEBUFFER_SRGB);
         }
         self.triangle_count = vertex_count as usize / 3;
