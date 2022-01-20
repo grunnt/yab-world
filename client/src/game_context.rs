@@ -7,7 +7,7 @@ use common::daynight::DayNight;
 use common::inventory::Inventory;
 use common::player::PlayerData;
 use common::{block::*, resource::ResourceRegistry};
-use gamework::{audio::AudioSource, video::*};
+use gamework::video::*;
 use nalgebra_glm::*;
 use server::YabServer;
 use std::sync::mpsc::Receiver;
@@ -24,7 +24,6 @@ pub struct GameContext {
     pub dig_beam_emitter_handle: EmitterHandle,
     pub player_position_handle: ParticlePositionHandle,
     pub player_target_handle: ParticlePositionHandle,
-    pub sound_high_beep: AudioSource,
     pub block_registry: BlockRegistry,
     pub resource_registry: ResourceRegistry,
     pub seed: u32,
@@ -47,14 +46,13 @@ pub struct GameContext {
     pub selected_block: Block,
     pub player_id: Option<u8>,
     pub players: Vec<PlayerData>,
+    pub last_sound_position: Vec3,
+    pub was_in_water: bool,
 }
 
 impl GameContext {
-    pub fn new(assets: &Assets) -> GameContext {
-        let sound_high_beep = AudioSource::load(&assets.assets_path("sounds/high_beep.wav"));
-
+    pub fn new(_assets: &Assets) -> GameContext {
         GameContext {
-            sound_high_beep,
             player_id: None,
             block_registry: BlockRegistry::empty(),
             resource_registry: ResourceRegistry::empty(),
@@ -88,6 +86,8 @@ impl GameContext {
             config: ClientConfig::load(),
             gui_renderer: None,
             players: Vec::new(),
+            last_sound_position: Vec3::zeros(),
+            was_in_water: false,
         }
     }
 

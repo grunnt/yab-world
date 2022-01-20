@@ -419,49 +419,50 @@ fn set_velocity_from_controls(object: &mut PhysicsObject) {
         let speed = if object.controls.slower {
             WALKING_VELOCITY * 2.0
         } else {
-            RUNNING_VELOCITY * 2.0
+            RUNNING_VELOCITY * 3.0
         };
-        if !(object.controls.is_moving() || object.controls.up || object.controls.down) {
+        if !object.controls.is_moving() {
             object.velocity.x = 0.0;
             object.velocity.y = 0.0;
+        }
+        if !object.controls.up && !object.controls.down {
             object.velocity.z = 0.0;
-        } else {
-            if object.controls.forward {
-                let horizontal_velocity = object.facing.xy().normalize() * speed;
-                object.velocity = Vec3::new(
-                    horizontal_velocity.x,
-                    horizontal_velocity.y,
-                    object.velocity.z,
-                );
-            } else if object.controls.backward {
-                let horizontal_velocity = -object.facing.xy().normalize() * speed;
-                object.velocity = Vec3::new(
-                    horizontal_velocity.x,
-                    horizontal_velocity.y,
-                    object.velocity.z,
-                );
-            }
-            let perpendicular = Vec2::new(-object.facing.y, object.facing.x).normalize();
-            if object.controls.left && !object.controls.right {
-                let horizontal_velocity = perpendicular * speed;
-                object.velocity = Vec3::new(
-                    horizontal_velocity.x,
-                    horizontal_velocity.y,
-                    object.velocity.z,
-                );
-            } else if object.controls.right && !object.controls.left {
-                let horizontal_velocity = -perpendicular * speed;
-                object.velocity = Vec3::new(
-                    horizontal_velocity.x,
-                    horizontal_velocity.y,
-                    object.velocity.z,
-                );
-            }
-            if object.controls.up && !object.controls.down {
-                object.velocity = Vec3::new(object.velocity.x, object.velocity.y, speed);
-            } else if object.controls.down && !object.controls.up {
-                object.velocity = Vec3::new(object.velocity.x, object.velocity.y, -speed);
-            }
+        }
+        if object.controls.forward {
+            let horizontal_velocity = object.facing.xy().normalize() * speed;
+            object.velocity = Vec3::new(
+                horizontal_velocity.x,
+                horizontal_velocity.y,
+                object.velocity.z,
+            );
+        } else if object.controls.backward {
+            let horizontal_velocity = -object.facing.xy().normalize() * speed;
+            object.velocity = Vec3::new(
+                horizontal_velocity.x,
+                horizontal_velocity.y,
+                object.velocity.z,
+            );
+        }
+        let perpendicular = Vec2::new(-object.facing.y, object.facing.x).normalize();
+        if object.controls.left && !object.controls.right {
+            let horizontal_velocity = perpendicular * speed;
+            object.velocity = Vec3::new(
+                horizontal_velocity.x,
+                horizontal_velocity.y,
+                object.velocity.z,
+            );
+        } else if object.controls.right && !object.controls.left {
+            let horizontal_velocity = -perpendicular * speed;
+            object.velocity = Vec3::new(
+                horizontal_velocity.x,
+                horizontal_velocity.y,
+                object.velocity.z,
+            );
+        }
+        if object.controls.up && !object.controls.down {
+            object.velocity = Vec3::new(object.velocity.x, object.velocity.y, speed);
+        } else if object.controls.down && !object.controls.up {
+            object.velocity = Vec3::new(object.velocity.x, object.velocity.y, -speed);
         }
     }
 }

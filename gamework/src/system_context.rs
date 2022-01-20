@@ -44,6 +44,10 @@ impl SystemContext {
         &self.video
     }
 
+    pub fn audio_mut(&mut self) -> &mut AudioOutput {
+        &mut self.audio
+    }
+
     pub fn assets(&self) -> &Assets {
         &self.assets
     }

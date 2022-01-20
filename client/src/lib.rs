@@ -96,10 +96,31 @@ impl YabClient {
             }
         };
 
-        App::run("YAB-World", 1024, 768, true, 3, 3, state, &assets, data);
+        App::run(
+            "YAB-World",
+            1024,
+            768,
+            true,
+            3,
+            3,
+            state,
+            &assets,
+            data,
+            Box::new(setup),
+        );
 
         info!("Exited");
 
         Ok(())
+    }
+}
+
+fn setup(_game: &mut GameContext, system: &mut SystemContext) {
+    let sounds = vec!["click", "step", "jump", "build", "splash"];
+    for sound in &sounds {
+        let path = system
+            .assets()
+            .assets_path(format!("sounds/{}.wav", sound).as_str());
+        system.audio_mut().load_sound(&path);
     }
 }

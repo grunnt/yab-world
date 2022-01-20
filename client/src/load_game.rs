@@ -162,7 +162,7 @@ impl State<GameContext> for LoadGameState {
         for event in gui_events {
             match event {
                 GuiEvent::ButtonClicked { widget_id } => {
-                    context.play_sound(&data.sound_high_beep);
+                    context.audio_mut().play_sound("click");
                     if widget_id == self.back_button {
                         return StateCommand::CloseState;
                     } else if widget_id == self.next_button {

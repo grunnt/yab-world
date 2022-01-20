@@ -26,6 +26,7 @@ impl App {
         starting_state: Box<dyn State<GameContext>>,
         assets: &Assets,
         mut data: GameContext,
+        setup: Box<dyn Fn(&mut GameContext, &mut SystemContext) -> ()>,
     ) {
         info!("Initializing system context");
         let events_loop = EventLoop::new();
@@ -56,6 +57,8 @@ impl App {
         let scale_factor = 1.0;
         let mut context = SystemContext::new(&gl, width, height, scale_factor, assets);
         data.initialize(&mut context);
+
+        setup(&mut data, &mut context);
 
         let mut state_manager = StateManager::new(data);
         state_manager.activate(starting_state, &mut context);

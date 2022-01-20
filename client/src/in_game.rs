@@ -139,8 +139,9 @@ impl InGameState {
                 Key::Space => {
                     // -------- Normal jumps --------
                     let object = data.physics.get_object_mut(self.player_body);
-                    if object.on_ground {
+                    if object.on_ground && !self.player_flying {
                         object.velocity.z = object.velocity.z.max(MIN_JUMP_VELOCITY);
+                        context.audio_mut().play_sound("jump");
                     }
                 }
                 Key::Tab => {
@@ -284,6 +285,7 @@ impl InGameState {
                                         block: selected_block,
                                     })
                                     .unwrap();
+                                context.audio_mut().play_sound("build");
                             } else {
                                 debug!(
                                     "Insufficient resources to place block {:?}",
@@ -356,6 +358,7 @@ impl InGameState {
                             .unwrap();
                     }
                     self.block_remove_timer -= BLOCK_REMOVE_TIME_S;
+                    context.audio_mut().play_sound("build");
                 }
             }
         } else {
@@ -451,7 +454,13 @@ impl State<GameContext> for InGameState {
             )
             .kind()
             == Block::water_block();
-
+        if self.in_water && !data.was_in_water {
+            context.audio_mut().play_sound("splash");
+            data.was_in_water = true;
+        } else if !self.in_water && data.was_in_water {
+            context.audio_mut().play_sound("splash");
+            data.was_in_water = false;
+        }
         data.daynight.update(delta);
 
         let camera = self.rendering().camera().clone();
@@ -460,18 +469,27 @@ impl State<GameContext> for InGameState {
 
         data.physics
             .set_object_facing(player_handle, &camera_direction);
-        data.physics.set_object_controls(
-            player_handle,
-            PhysicsObjectControls {
-                left: context.input().key_pressed(Key::A),
-                right: context.input().key_pressed(Key::D),
-                forward: context.input().key_pressed(Key::W),
-                backward: context.input().key_pressed(Key::S),
-                up: context.input().key_pressed(Key::Space),
-                down: context.input().key_pressed(Key::LCtrl),
-                slower: context.input().key_pressed(Key::LShift),
-            },
-        );
+        let controls = PhysicsObjectControls {
+            left: context.input().key_pressed(Key::A),
+            right: context.input().key_pressed(Key::D),
+            forward: context.input().key_pressed(Key::W),
+            backward: context.input().key_pressed(Key::S),
+            up: context.input().key_pressed(Key::Space),
+            down: context.input().key_pressed(Key::LCtrl),
+            slower: context.input().key_pressed(Key::LShift),
+        };
+        let on_ground = if self.player_flying {
+            false
+        } else {
+            data.physics.get_object_mut(player_handle).on_ground
+        };
+        if controls.is_moving() && on_ground {
+            if camera.position.metric_distance(&data.last_sound_position) > 2.0 {
+                context.audio_mut().play_sound("step");
+                data.last_sound_position = camera.position;
+            }
+        }
+        data.physics.set_object_controls(player_handle, controls);
 
         // -------- Networking --------
         // Do we need to send a position update to the server?

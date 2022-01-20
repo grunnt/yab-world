@@ -20,7 +20,7 @@ pub struct HillsGenerator {
 impl HillsGenerator {
     pub fn new(seed: u32) -> Self {
         HillsGenerator {
-            roughness_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0025, 0.015),
+            roughness_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0025, 0.025),
             terrain_noise: NoiseSource3D::<Fbm>::new_fbm(seed, 0.0, 1.0),
             resource_type_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0, 2.0),
             resource_density_noise: NoiseSource3D::<Perlin>::new_perlin(seed, 0.0, 1.0),

@@ -126,7 +126,7 @@ impl State<GameContext> for MainMenuState {
         for event in gui_events {
             match event {
                 GuiEvent::ButtonClicked { widget_id } => {
-                    context.play_sound(&data.sound_high_beep);
+                    context.audio_mut().play_sound("click");
                     if widget_id == self.continue_button {
                         if self.continue_save.is_some() {
                             let save = self.continue_save.as_ref().unwrap();

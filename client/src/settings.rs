@@ -107,7 +107,7 @@ impl State<GameContext> for SettingsState {
         for event in gui_events {
             match event {
                 GuiEvent::ButtonClicked { widget_id } => {
-                    context.play_sound(&data.sound_high_beep);
+                    context.audio_mut().play_sound("click");
                     if widget_id == self.back_button {
                         let distance_string =
                             match self.gui.get_value(&self.render_distance_textfield) {

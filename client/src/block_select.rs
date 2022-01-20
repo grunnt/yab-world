@@ -125,7 +125,7 @@ impl State<GameContext> for BlockSelectState {
         for event in gui_events {
             match event {
                 GuiEvent::ButtonClicked { widget_id } => {
-                    context.play_sound(&data.sound_high_beep);
+                    context.audio_mut().play_sound("click");
                     if widget_id == self.back_button {
                         context.input_mut().set_mouse_captured(true);
                         return StateCommand::CloseState;

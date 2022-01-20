@@ -1,10 +1,8 @@
 use rodio::{OutputStream, OutputStreamHandle, Sink};
+use std::collections::HashMap;
+use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
-use std::{
-    fs::{self, File},
-    marker::PhantomData,
-};
 use std::{io::Cursor, sync::Arc};
 
 // Based on https://github.com/bevyengine/bevy/blob/master/crates/bevy_audio/src/audio_source.rs
@@ -46,46 +44,40 @@ impl Decodable for AudioSource {
     }
 }
 
-pub struct AudioOutput<P = AudioSource>
-where
-    P: Decodable,
-{
+pub struct AudioOutput {
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
-    phantom: PhantomData<P>,
+    sounds: HashMap<String, AudioSource>,
 }
 
-impl<P> Default for AudioOutput<P>
-where
-    P: Decodable,
-{
+impl Default for AudioOutput {
     fn default() -> Self {
         let (stream, stream_handle) = OutputStream::try_default().unwrap();
 
         Self {
             _stream: stream,
             stream_handle,
-            phantom: PhantomData,
+            sounds: HashMap::new(),
         }
     }
 }
 
-impl<P> AudioOutput<P>
-where
-    P: Decodable,
-    <P as Decodable>::Decoder: rodio::Source + Send + Sync,
-    <<P as Decodable>::Decoder as Iterator>::Item: rodio::Sample + Send + Sync,
-{
-    pub fn play_source(&self, audio_source: &P) {
+impl AudioOutput {
+    pub fn play_source(&self, audio_source: &AudioSource) {
         let sink = Sink::try_new(&self.stream_handle).unwrap();
         sink.append(audio_source.decoder());
         sink.detach();
     }
+
+    pub fn load_sound(&mut self, path: &Path) {
+        let sound_name = path.file_stem().unwrap().to_str().unwrap().to_string();
+        let sound = AudioSource::load(path);
+        self.sounds.insert(sound_name, sound);
+    }
+
+    pub fn play_sound(&mut self, sound_name: &str) {
+        if let Some(source) = self.sounds.get(sound_name) {
+            self.play_source(source);
+        }
+    }
 }
-
-// let bleep_file = std::fs::File::open(assets.assets_path("sounds/bleep.wav")).unwrap();
-// pub bleep_source: SamplesBuffer<f32>,
-
-//     let bleep_source = rodio::Decoder::new(BufReader::new(bleep_file))
-//         .unwrap()
-//         .;
