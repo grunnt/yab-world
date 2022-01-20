@@ -163,7 +163,7 @@ impl State<GameContext> for NewGameState {
         for event in gui_events {
             match event {
                 GuiEvent::ButtonClicked { widget_id } => {
-                    context.play_sound(&data.sound_high_beep);
+                    context.audio_mut().play_sound("click");
                     if widget_id == self.create_button {
                         let world_type = match self.gui.get_value(&self.world_type_selector) {
                             GuiValue::Usize(selected_index) => match selected_index {
