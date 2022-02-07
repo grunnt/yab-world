@@ -45,13 +45,11 @@ impl HillsGenerator {
             if noise + h_factor < 0.5 {
                 let res = self
                     .resource_density_noise
-                    .get(x as f64 + 34.434, y as f64 - 995.5, z as f64 + 55.001, 0.1)
+                    .get(x as f64, y as f64, z as f64, 0.1)
                     .powf(3.0);
                 let depth_factor = (1.0 - (z as f64 / 256.0) * 0.1).clamp(0.0, 0.1);
                 if res > 0.7 - depth_factor {
-                    let type_noise =
-                        self.resource_type_noise
-                            .get(x as f64 + 545.545, y as f64 + 55.323, 0.002);
+                    let type_noise = self.resource_type_noise.get(x as f64, y as f64, 0.002);
                     if type_noise < 1.0 {
                         Block::gold_block()
                     } else {
@@ -70,8 +68,7 @@ impl HillsGenerator {
     }
 
     fn get_terrain_roughness(&mut self, x: i16, y: i16) -> f64 {
-        self.roughness_noise
-            .get(434.0 - x as f64, 545.0 + y as f64, 0.0001)
+        self.roughness_noise.get(x as f64, y as f64, 0.0001)
     }
 }
 
