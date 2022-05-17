@@ -5,6 +5,7 @@ use noise::*;
 
 use super::{Generator, NoiseSource2D, PregeneratedObject};
 
+/// Grid-based object placer for an infinite block world
 pub struct ObjectPlacer {
     grid_size: i16,
     grid_margin: i16,

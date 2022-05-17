@@ -4,6 +4,7 @@ use common::block::*;
 use common::chunk::{CHUNK_SIZE, WORLD_HEIGHT_CHUNKS};
 use noise::*;
 
+// Generates a world covered by an ocean with a rolling sand floor, without resources
 pub struct WaterWorldGenerator {
     soil_thickness: usize,
     water_z: usize,

@@ -5,6 +5,7 @@ use common::{
 
 use super::Generator;
 
+/// Generates a completely flat world covered with grass with no water or resources
 pub struct FlatGenerator {
     dirt_bottom_z: usize,
     terrain_top_z: usize,

@@ -6,6 +6,7 @@ use common::{
 };
 use noise::{Fbm, Perlin};
 
+/// Generates rough hills covered in grass, with a fixed water level and resource placement
 pub struct HillsGenerator {
     roughness_noise: NoiseSource2D<Perlin>,
     terrain_noise: NoiseSource3D<Fbm>,

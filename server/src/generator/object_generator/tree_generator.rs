@@ -5,6 +5,7 @@ use crate::generator::PregeneratedObject;
 
 use super::ObjectGenerator;
 
+/// Generates a simple tree with a trunk and a semispherical top of leaves
 pub struct TreeGenerator {
     random: StdRng,
 }

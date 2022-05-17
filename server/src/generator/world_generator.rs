@@ -11,6 +11,7 @@ use crate::generator::ObjectGenerator;
 use crate::generator::TowerGenerator;
 use crate::generator::TreeGenerator;
 
+/// Multi-threaded terrain generator
 pub struct WorldGenerator {
     pub worker_count: usize,
     colpos_tx: Sender<ChunkColumnPos>,
@@ -85,7 +86,7 @@ impl WorldGenerator {
         self.colpos_tx.send(col).unwrap();
     }
 
-    // Receive newly generated columns
+    /// Receive newly generated columns
     pub fn try_receive(&mut self) -> Option<(ChunkColumnPos, Vec<Chunk>)> {
         let col_opt = self.column_rx.try_recv();
         if col_opt.is_ok() {

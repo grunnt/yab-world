@@ -7,9 +7,11 @@ pub use tower_generator::TowerGenerator;
 pub use tree_generator::TreeGenerator;
 
 pub trait ObjectGenerator {
+    /// Pre-generate an object to be placed in the world
     fn generate(&mut self) -> PregeneratedObject;
 }
 
+/// Container for a pregenerated object, with some helper functions
 #[derive(Clone)]
 pub struct PregeneratedObject {
     pub anchor_x: usize,
@@ -130,6 +132,7 @@ impl PregeneratedObject {
         }
     }
 
+    /// Place a sphere where a random 80% of the blocks are placed
     pub fn spray_sphere(
         &mut self,
         x: usize,

@@ -5,6 +5,7 @@ use crate::generator::PregeneratedObject;
 
 use super::ObjectGenerator;
 
+/// Generates a tower with several floors, a door, crenelations and a light
 pub struct TowerGenerator {
     random: StdRng,
 }

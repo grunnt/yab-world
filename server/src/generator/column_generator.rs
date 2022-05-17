@@ -8,6 +8,7 @@ use std::sync::Arc;
 use super::ObjectPlacer;
 use super::PregeneratedObject;
 
+/// Generate complete columns of chunks of a given world type, based on a seed
 pub struct ColumnGenerator {
     hills_generator: HillsGenerator,
     flat_generator: FlatGenerator,

@@ -8,6 +8,7 @@ use crate::generator::{NoiseSource2D, NoiseSource3D};
 
 use super::Generator;
 
+/// Generates an extreme alien landscape covered in ice, without any water but with resource placement
 pub struct AlienGenerator {
     terrain_noise: NoiseSource3D<Fbm>,
     resource_type_noise: NoiseSource2D<Perlin>,
