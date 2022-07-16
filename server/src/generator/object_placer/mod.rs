@@ -73,6 +73,7 @@ impl ObjectPlacer {
         }
     }
 
+    /// Place pregenerated object(s) at the given coordinate
     fn place_grid_object(
         &mut self,
         grid_x: i16,
@@ -82,6 +83,7 @@ impl ObjectPlacer {
         generator: &mut dyn Generator,
         blocks: &mut Vec<u32>,
     ) {
+        // Determine pregenerated object for this location
         let random = self.randomizer_noise.get(grid_x as f64, grid_y as f64, 1.0);
         let pregenerated = self
             .pregenerated
@@ -117,15 +119,11 @@ impl ObjectPlacer {
         let x2 = x1 + pregenerated.size_x as i16;
         let y2 = y1 + pregenerated.size_y as i16;
         if x < x1 || x >= x2 || y < y1 || y >= y2 {
-            // Outside of this object area
+            // We are entirely outside of this objects area
             return;
         }
 
-        // println!(
-        //     "grid {},{} anchor {},{} for {},{}",
-        //     grid_x, grid_y, anchor_world_x, anchor_world_y, x, y
-        // );
-
+        // Should we place an object at this grid coordinate considering the requested density?
         let density_noise = if self.clustered_objects {
             self.fbm_density_noise
                 .get(anchor_world_x as f64, anchor_world_y as f64, 0.01)
@@ -134,13 +132,19 @@ impl ObjectPlacer {
                 .get(anchor_world_x as f64, anchor_world_y as f64, 1.0)
         };
         if density_noise > self.object_density {
+            // No object here
             return;
         }
+
+        // Determine z coordinates of terrain at anchor position
         let (anchor_rock_top_z, anchor_water_top_z, anchor_top_z) =
             generator.determine_rock_water_top(anchor_world_x, anchor_world_y);
         if anchor_water_top_z > anchor_rock_top_z {
+            // No objects below water
             return;
         }
+
+        // Determine anchor and object position
         let anchor_world_z = if pregenerated.place_on_soil {
             anchor_top_z
         } else {
@@ -160,11 +164,12 @@ impl ObjectPlacer {
         .min(z1);
         let x_rel = (x - x1) as usize;
         let y_rel = (y - y1) as usize;
+
+        // Now place the object
         let bottom_block = pregenerated.get(x_rel, y_rel, 0);
         let place_foundation = bottom_block != Block::empty_block() && bottom_block != IGNORE_BLOCK;
         for z in from_z..z2 {
             if pregenerated.overwrite_non_empty || blocks[z] == AIR_BLOCK {
-                let z_rel = z - z1;
                 if z < z1 {
                     if place_foundation {
                         if let Some(foundation_block) = pregenerated.foundation_block {
@@ -172,6 +177,7 @@ impl ObjectPlacer {
                         }
                     }
                 } else {
+                    let z_rel = z - z1;
                     let object_block = pregenerated.get(x_rel, y_rel, z_rel);
                     if object_block != IGNORE_BLOCK {
                         blocks[z] = pregenerated.get(x_rel, y_rel, z_rel);
@@ -180,6 +186,7 @@ impl ObjectPlacer {
             }
         }
         if pregenerated.overwrite_non_empty {
+            // Clear any blocks above the object
             for z in z2..WORLD_HEIGHT_BLOCKS as usize {
                 blocks[z] = Block::empty_block();
             }
