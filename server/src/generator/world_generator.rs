@@ -54,6 +54,7 @@ impl WorldGenerator {
                         ColumnGenerator::new(seed, poi_object_list, tree_object_list);
                     info!("Starting generator {}", id);
                     loop {
+                        // Wait for a new column position (i.e. a generator request)
                         match colpos_rx.recv() {
                             Ok(col) => {
                                 let column = generator.generate_column(world_type, col);

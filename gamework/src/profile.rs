@@ -2,6 +2,7 @@ use circular_queue::CircularQueue;
 use floating_duration::TimeAsFloat;
 use std::time::{Duration, Instant};
 
+/// Simple profiler that registers min, max and average timings over multiple frames
 pub struct Profile {
     start: Option<Instant>,
     end: Option<Instant>,
@@ -27,10 +28,12 @@ impl Profile {
         }
     }
 
+    /// Start the timer
     pub fn start(&mut self) {
         self.start = Some(Instant::now());
     }
 
+    /// End the timer
     pub fn end(&mut self) {
         self.end = Some(Instant::now());
         if let (Some(start), Some(end)) = (self.start, self.end) {
@@ -42,6 +45,7 @@ impl Profile {
         }
     }
 
+    /// End the frame and calculate the average and fps values
     pub fn frame(&mut self) {
         // Update buffer
         if let Some(duration) = self.duration {

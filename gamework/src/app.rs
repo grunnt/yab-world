@@ -1,12 +1,10 @@
 use crate::*;
 use floating_duration::TimeAsFloat;
+use glutin::event::{ElementState, Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
+use glutin::platform::windows::WindowBuilderExtWindows;
 use glutin::window::WindowBuilder;
 use glutin::{dpi::PhysicalPosition, event::MouseScrollDelta};
-use glutin::{
-    event::{ElementState, Event, WindowEvent},
-    platform::windows::WindowBuilderExtWindows,
-};
 use glutin::{Api, ContextBuilder, GlRequest};
 use log::*;
 use std::time::Instant;
@@ -33,7 +31,6 @@ impl App {
         let wb = WindowBuilder::new()
             .with_title(title)
             .with_resizable(resizable)
-            .with_min_inner_size(glutin::dpi::LogicalSize::new(1024, 768))
             .with_drag_and_drop(false) // Needs to be disabled to work with audio library
             .with_inner_size(glutin::dpi::LogicalSize::new(width, height));
         let windowed_context = ContextBuilder::new()
