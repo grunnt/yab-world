@@ -2,7 +2,7 @@
 
 Yet Another Block-World. I made this to learn more about Rust, OpenGL and game development.
 
-[Read more about this on my blog](https://www.basvs.dev/blog/yab-world).
+[Read more about this on my blog](https://www.basvs.dev/projects/yab-world).
 
 You can download and run YAB-World for Windows [here](https://github.com/grunnt/yab-world/releases).
 
