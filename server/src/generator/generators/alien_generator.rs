@@ -34,7 +34,7 @@ impl AlienGenerator {
         } else if z > self.terrain_min_z + self.terrain_z_range + 16 {
             Block::empty_block()
         } else {
-            let noise = self.terrain_noise.get(x as f64, y as f64, z as f64, 0.01);
+            let noise = self.terrain_noise.get(x as f64, y as f64, z as f64, 0.03);
             let noise = noise * noise;
             let h_factor = (z - self.terrain_min_z) as f64 / self.terrain_z_range as f64;
             if noise + h_factor < 0.5 {
