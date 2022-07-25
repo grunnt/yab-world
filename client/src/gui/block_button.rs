@@ -90,6 +90,11 @@ impl Widget<GuiRenderer> for BlockButton {
         }
 
         // Render background
+        let back_color = if self.count > 0 {
+            config.input_color.clone()
+        } else {
+            config.background_color.clone()
+        };
         context.render_rect(
             x,
             y,
@@ -97,7 +102,7 @@ impl Widget<GuiRenderer> for BlockButton {
             size.height,
             focus,
             GUI_LAYER_BACKGROUND,
-            &config.background_color,
+            &back_color,
         );
 
         // Render 3 sides of a fake cube
@@ -163,15 +168,16 @@ impl Widget<GuiRenderer> for BlockButton {
             },
             self.texture_id_right.unwrap(),
         );
-        // TODO: counts not working yet so temporarily hidden
-        // context.text_mut().place_string(
-        //     x1,
-        //     y1,
-        //     &self.count.to_string(),
-        //     TextAlignment::Start,
-        //     TextAlignment::Start,
-        //     1,
-        // );
+        if self.count > 0 {
+            context.text_mut().place_string(
+                x + width,
+                y + height,
+                &self.count.to_string(),
+                TextAlignment::End,
+                TextAlignment::End,
+                1,
+            );
+        }
     }
 
     fn get_value(&self) -> GuiValue {

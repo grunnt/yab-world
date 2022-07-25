@@ -32,7 +32,7 @@ impl Physics {
             max_velocity: 100.0, // 0.8, // Should never be >= 1.0 to prevent tunneling
             next_object_handle: 0,
             objects: HashMap::new(),
-            water_block: block_registry.block_kind_from_code("wtr"),
+            water_block: block_registry.block_kind_from_code("water"),
         }
     }
 

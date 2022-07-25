@@ -51,17 +51,20 @@ impl YabServer {
         let handle = Builder::new()
             .name("yab-world-server".to_string())
             .spawn(move || {
-                let data_path = PathBuf::from("data");
-                let block_registry = BlockRegistry::load_or_create(&data_path);
                 let world_list = WorldList::new();
                 let world_folder = world_list.get_world_path(seed);
-                 let mut world = if world_folder.exists() {
+                let data_path = if world_folder.exists() {
+                    world_folder.clone()
+                } else { 
+                    PathBuf::from("server_data") 
+                };
+                let block_registry = BlockRegistry::load_or_create(&data_path);
+                let mut world = if world_folder.exists() {
                     ServerWorldHandler::load(seed, &block_registry)
                 } else {
                     ServerWorldHandler::new(seed, description.as_str(), world_type, &block_registry)
                 };
                 let mut player_store = PlayerStore::load(&world_folder);
-                let block_registry = BlockRegistry::load_or_create(&world_folder);
                 let mut clients = Vec::new();
                 let mut broadcast_to_all = Vec::new();
                 let mut loop_profile = Profile::new(1);
@@ -236,31 +239,26 @@ impl YabServer {
                                         continue;
                                     }
                                     // Add or remove resources from inventory
+                                    let block = block.kind();
                                     let mut allowed = true;
                                     let store_inventory = &mut player_store.get_mut_player(&client.data.username).unwrap().inventory;
-                                    if block.kind() == AIR_BLOCK_KIND {
+                                    if block == AIR_BLOCK_KIND {
                                         // A block was removed
-                                        let old_block = world.get_block(wbx, wby, wbz);
-                                        let block_def = block_registry.get(old_block.kind());
-                                        for (resource_type, count) in &block_def.block_yield {
-                                            client.data.inventory.add(*resource_type, *count);
-                                            store_inventory.add(*resource_type, *count);
-                                        }
+                                        let old_block = world.get_block(wbx, wby, wbz).kind();
+                                        client.data.inventory.add(old_block, 1);
+                                        store_inventory.add(old_block, 1);
                                     } else {
                                         // A block was placed
-                                        let block_def = block_registry.get(block.kind());
-                                        for (resource_type, count) in &block_def.block_yield {
-                                            if client.data.inventory.count(*resource_type) < *count {
-                                                warn!(
-                                                    "Player {} ({}) tried to build without sufficient resources",
-                                                    client.data.username, client.player_id
-                                                );
-                                                client.connection.disconnect();
-                                                allowed = false;
-                                            } else {
-                                                client.data.inventory.remove(*resource_type, *count);
-                                                store_inventory.remove(*resource_type, *count);
-                                            }
+                                        if client.data.inventory.count(block) < 1 {
+                                            warn!(
+                                                "Player {} ({}) tried to build without sufficient resources",
+                                                client.data.username, client.player_id
+                                            );
+                                            client.connection.disconnect();
+                                            allowed = false;
+                                        } else {
+                                            client.data.inventory.remove(block, 1);
+                                            store_inventory.remove(block, 1);
                                         }
                                     }
                                     if allowed {

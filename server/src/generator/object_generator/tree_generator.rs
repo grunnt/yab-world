@@ -15,7 +15,7 @@ pub struct TreeGenerator {
 impl TreeGenerator {
     pub fn new(seed: u32, block_registry: &BlockRegistry) -> Self {
         let log_block = block_registry.block_kind_from_code("log");
-        let leaves_block = block_registry.block_kind_from_code("lvs");
+        let leaves_block = block_registry.block_kind_from_code("leaves");
         TreeGenerator {
             random: StdRng::seed_from_u64(seed as u64),
             log_block,

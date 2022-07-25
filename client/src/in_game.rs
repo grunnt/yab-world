@@ -128,7 +128,6 @@ impl InGameState {
             }
             InputEvent::KeyPress { key, shift } => match key {
                 Key::Space => {
-                    // -------- Normal jumps --------
                     let object = data.physics_mut().get_object_mut(self.player_body);
                     if object.on_ground && !self.player_flying {
                         object.velocity.z = object.velocity.z.max(MIN_JUMP_VELOCITY);
@@ -138,7 +137,10 @@ impl InGameState {
                 Key::Tab => {
                     context.input_mut().set_mouse_captured(false);
                     return StateCommand::OpenState {
-                        state: Box::new(BlockSelectState::new(&data.block_registry)),
+                        state: Box::new(BlockSelectState::new(
+                            &data.block_registry,
+                            &data.inventory,
+                        )),
                     };
                 }
                 Key::X => {
@@ -178,25 +180,6 @@ impl InGameState {
         StateCommand::None
     }
 
-    fn set_selected_block(&mut self, data: &mut GameContext, selected: Block) {
-        data.selected_block = selected.kind();
-        let mut block_count = 999;
-        for (resource, count) in &data.block_registry.get(data.selected_block).block_cost {
-            let inv_count = data.inventory.count(*resource);
-            let max_blocks = if *count > 0 { inv_count / count } else { 0 };
-            if max_blocks < block_count {
-                block_count = max_blocks;
-            }
-        }
-        let text = format!(
-            "{} ({})",
-            data.block_registry.get(data.selected_block).name,
-            block_count
-        );
-        self.gui
-            .set_value(&self.selected_label, GuiValue::String(text));
-    }
-
     fn handle_game_input(
         &mut self,
         context: &mut SystemContext,
@@ -225,20 +208,10 @@ impl InGameState {
                     ) {
                         if !data.is_occopied_by_body(wbx, wby, wbz) {
                             // Do we have sufficient resources?
-                            let selected_block = data.selected_block;
-                            let block_def = data.block_registry.get(selected_block);
-                            let mut sufficient = true;
-                            for (resource_type, count) in &block_def.block_yield {
-                                if data.inventory.count(*resource_type) < *count {
-                                    sufficient = false;
-                                    break;
-                                }
-                            }
-                            if sufficient {
+                            let selected_block = data.selected_block.kind();
+                            if data.inventory.count(selected_block) > 0 {
                                 // Remove resources from inventory
-                                for (resource_type, count) in &block_def.block_yield {
-                                    data.inventory.remove(*resource_type, *count);
-                                }
+                                data.inventory.remove(selected_block, 1);
                                 // Place block
                                 let block = data.block_registry.set_block_flags(selected_block);
                                 data.world_mut().set_block_add_dirty(
@@ -305,11 +278,8 @@ impl InGameState {
                     if data.world().chunks.are_all_neighbours_stored(
                         ChunkColumnPos::from_world_block_coords(wbx, wby),
                     ) {
-                        // Add resources in block to inventory
-                        let block_def = data.block_registry.get(block.kind());
-                        for (resource_type, count) in &block_def.block_yield {
-                            data.inventory.add(*resource_type, *count);
-                        }
+                        // Add block to inventory
+                        data.inventory.add(block.kind(), 1);
                         // Clear the block
                         data.world_mut().set_block_add_dirty(
                             wbx,
@@ -353,7 +323,7 @@ impl InGameState {
 impl State<GameContext> for InGameState {
     fn initialize(&mut self, data: &mut GameContext, context: &mut SystemContext) {
         debug!("Activating {}", self.type_name());
-        self.set_selected_block(data, 2);
+        data.selected_block = data.block_registry.block_from_code("dirt");
 
         // ----------------------------------
         // Game world
@@ -392,6 +362,16 @@ impl State<GameContext> for InGameState {
         context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         context.fill_profile_buffer(self.profile_chart().buffer_mut());
+
+        // Update selected block label
+        let block_count = data.inventory.count(data.selected_block.kind());
+        let text = format!(
+            "{} ({})",
+            data.block_registry.get(data.selected_block).name,
+            block_count
+        );
+        self.gui
+            .set_value(&self.selected_label, GuiValue::String(text));
 
         self.gui.update(
             input_events,

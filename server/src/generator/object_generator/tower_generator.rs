@@ -16,10 +16,10 @@ pub struct TowerGenerator {
 
 impl TowerGenerator {
     pub fn new(seed: u32, block_registry: &BlockRegistry) -> Self {
-        let stone_block = block_registry.block_kind_from_code("stn");
-        let bricks_block = block_registry.block_kind_from_code("brk");
-        let wood_block = block_registry.block_kind_from_code("wod");
-        let lamp_block = block_registry.block_kind_from_code("lmp");
+        let stone_block = block_registry.block_kind_from_code("stone");
+        let bricks_block = block_registry.block_kind_from_code("bricks");
+        let wood_block = block_registry.block_kind_from_code("wood");
+        let lamp_block = block_registry.block_kind_from_code("lamp");
 
         TowerGenerator {
             random: StdRng::seed_from_u64(seed as u64),

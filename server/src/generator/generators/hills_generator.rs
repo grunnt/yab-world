@@ -27,13 +27,13 @@ pub struct HillsGenerator {
 
 impl HillsGenerator {
     pub fn new(seed: u32, block_registry: &BlockRegistry) -> Self {
-        let stone_block = block_registry.block_kind_from_code("stn");
-        let dirt_block = block_registry.block_kind_from_code("drt");
-        let grass_block = block_registry.block_kind_from_code("grs");
-        let sand_block = block_registry.block_kind_from_code("snd");
-        let gold_block = block_registry.block_kind_from_code("gld");
-        let iron_block = block_registry.block_kind_from_code("irn");
-        let water_block = block_registry.block_kind_from_code("wtr");
+        let stone_block = block_registry.block_kind_from_code("stone");
+        let dirt_block = block_registry.block_kind_from_code("dirt");
+        let grass_block = block_registry.block_kind_from_code("grass");
+        let sand_block = block_registry.block_kind_from_code("sand");
+        let gold_block = block_registry.block_kind_from_code("gold");
+        let iron_block = block_registry.block_kind_from_code("iron");
+        let water_block = block_registry.block_kind_from_code("water");
 
         HillsGenerator {
             roughness_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0025, 0.025),
@@ -54,7 +54,7 @@ impl HillsGenerator {
         }
     }
 
-    fn determine_block(&mut self, z: usize, x: i16, y: i16, roughness: f64) -> u32 {
+    fn determine_block(&mut self, z: usize, x: i16, y: i16, roughness: f64) -> Block {
         let block = if z < self.terrain_min_z {
             self.stone_block
         } else if z > self.terrain_min_z + self.terrain_z_range + 16 {

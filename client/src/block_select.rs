@@ -4,7 +4,7 @@ use crate::{
     gui::{gui_renderer::GuiRenderer, BlockButton, Button, Label},
     GameContext,
 };
-use common::block::*;
+use common::{block::*, inventory::Inventory};
 use gamework::*;
 
 pub struct BlockSelectState {
@@ -14,7 +14,7 @@ pub struct BlockSelectState {
 }
 
 impl BlockSelectState {
-    pub fn new(block_registry: &BlockRegistry) -> Self {
+    pub fn new(block_registry: &BlockRegistry, inventory: &Inventory) -> Self {
         let mut gui = Gui::new(
             vec![flex_col(1.0), fixed_col(800.0), flex_col(1.0)],
             vec![
@@ -54,7 +54,7 @@ impl BlockSelectState {
         let mut column_index = 0;
         let mut row_index = 0;
         let mut block_buttons = HashMap::new();
-        for block_def in block_registry.all_blocks() {
+        for (block_kind, block_def) in block_registry.all_blocks().iter().enumerate() {
             if block_def.buildable {
                 let widget_id = gui.place(
                     block_grid,
@@ -66,7 +66,7 @@ impl BlockSelectState {
                         &block_def.textures.get(FACE_YP).unwrap().clone(),
                         64.0,
                         block_def.light > 0,
-                        200 + (column_index + row_index) as u32,
+                        inventory.count(block_kind as Block),
                     )),
                     CellAlignment::Center,
                 );

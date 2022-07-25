@@ -31,8 +31,6 @@ pub struct BlockDef {
     pub transparent: bool,
     pub buildable: bool,
     pub light: u8,
-    pub block_yield: Vec<(Block, u32)>,
-    pub block_cost: Vec<(Block, u32)>,
 }
 
 #[derive(Clone, Debug)]
@@ -64,7 +62,7 @@ impl BlockRegistry {
         // First blocks (index 0 and 1) is always air and bedrock
         registry.add("air", "Air", Vec::new(), false, true, 0, false);
         registry.add(
-            "bdr",
+            "bedrock",
             "Bedrock",
             vec![
                 "bedrock".to_string(),
@@ -80,7 +78,7 @@ impl BlockRegistry {
             false,
         );
         registry.add(
-            "wtr",
+            "water",
             "Water",
             vec![
                 "water".to_string(),
@@ -96,7 +94,7 @@ impl BlockRegistry {
             false,
         );
         registry.add(
-            "stn",
+            "stone",
             "Stone",
             vec![
                 "stone".to_string(),
@@ -112,7 +110,7 @@ impl BlockRegistry {
             true,
         );
         registry.add(
-            "drt",
+            "dirt",
             "Dirt",
             vec![
                 "dirt".to_string(),
@@ -128,7 +126,7 @@ impl BlockRegistry {
             true,
         );
         registry.add(
-            "snd",
+            "sand",
             "Sand",
             vec![
                 "sand".to_string(),
@@ -144,7 +142,7 @@ impl BlockRegistry {
             true,
         );
         registry.add(
-            "grs",
+            "grass",
             "Grass",
             vec![
                 "grass_block_side".to_string(),
@@ -159,17 +157,6 @@ impl BlockRegistry {
             0,
             true,
         );
-
-        // Set the block yields and costs
-        let stn_id = registry.block_kind_from_code("stn");
-        let drt_id = registry.block_kind_from_code("drt");
-        let snd_id = registry.block_kind_from_code("snd");
-        let grs_id = registry.block_kind_from_code("grs");
-        registry.set_yield_cost(grs_id, vec![(drt_id, 1)], vec![(drt_id, 1)]);
-        registry.set_yield_cost(drt_id, vec![(drt_id, 1)], vec![(drt_id, 1)]);
-        registry.set_yield_cost(snd_id, vec![(snd_id, 1)], vec![(snd_id, 1)]);
-        registry.set_yield_cost(stn_id, vec![(stn_id, 1)], vec![(stn_id, 1)]);
-
         registry.build_indexes();
         registry
     }
@@ -193,8 +180,6 @@ impl BlockRegistry {
             transparent,
             light,
             buildable,
-            block_yield: Vec::new(),
-            block_cost: Vec::new(),
         });
         return index as Block;
     }
@@ -215,11 +200,19 @@ impl BlockRegistry {
             }
             block += 1;
         }
-        return 0;
+        return AIR_BLOCK;
     }
 
     pub fn block_kind_from_code(&self, code: &str) -> Block {
-        return self.block_from_code(code).kind();
+        let mut block = 0;
+        while block < self.blocks.len() {
+            let block_def = &self.blocks[block];
+            if block_def.code == code {
+                return block as Block;
+            }
+            block += 1;
+        }
+        return AIR_BLOCK_KIND;
     }
 
     pub fn set_block_flags(&self, block: Block) -> Block {
@@ -262,16 +255,6 @@ impl BlockRegistry {
         let string = serde_json::to_string_pretty(&self.blocks).unwrap();
         fs::write(path, string).unwrap();
         info!("File {:?} created", path);
-    }
-
-    fn set_yield_cost(
-        &mut self,
-        block: Block,
-        block_yield: Vec<(Block, u32)>,
-        block_cost: Vec<(Block, u32)>,
-    ) {
-        self.blocks[block as usize].block_yield = block_yield;
-        self.blocks[block as usize].block_yield = block_cost;
     }
 
     fn build_indexes(&mut self) {

@@ -24,10 +24,10 @@ pub struct AlienGenerator {
 
 impl AlienGenerator {
     pub fn new(seed: u32, block_registry: &BlockRegistry) -> Self {
-        let stone_block = block_registry.block_kind_from_code("stn");
-        let gold_block = block_registry.block_kind_from_code("gld");
-        let iron_block = block_registry.block_kind_from_code("irn");
-        let water_block = block_registry.block_kind_from_code("wtr");
+        let stone_block = block_registry.block_kind_from_code("stone");
+        let gold_block = block_registry.block_kind_from_code("gold");
+        let iron_block = block_registry.block_kind_from_code("iron");
+        let water_block = block_registry.block_kind_from_code("water");
         let ice_block = block_registry.block_kind_from_code("ice");
 
         AlienGenerator {

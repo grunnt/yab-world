@@ -16,9 +16,9 @@ pub struct WaterWorldGenerator {
 
 impl WaterWorldGenerator {
     pub fn new(seed: u32, block_registry: &BlockRegistry) -> Self {
-        let stone_block = block_registry.block_kind_from_code("stn");
-        let sand_block = block_registry.block_kind_from_code("snd");
-        let water_block = block_registry.block_kind_from_code("wtr");
+        let stone_block = block_registry.block_kind_from_code("stone");
+        let sand_block = block_registry.block_kind_from_code("sand");
+        let water_block = block_registry.block_kind_from_code("water");
 
         let floor_min_z = 16;
         let floor_max_z = 64;

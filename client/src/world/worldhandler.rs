@@ -41,7 +41,7 @@ impl WorldHandler {
         let (vertices_tx, vertices_rx) = unbounded();
         let (status_tx, status_rx) = unbounded();
 
-        let water_block = block_registry.block_kind_from_code("wtr");
+        let water_block = block_registry.block_kind_from_code("water");
 
         let mut buffer = ChunkBuffer::new();
         let worldmesher = WorldMesher::new(block_registry.clone());

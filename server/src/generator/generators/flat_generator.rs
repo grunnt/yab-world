@@ -16,9 +16,9 @@ pub struct FlatGenerator {
 
 impl FlatGenerator {
     pub fn new(dirt_bottom_z: usize, terrain_top_z: usize, block_registry: &BlockRegistry) -> Self {
-        let stone_block = block_registry.block_kind_from_code("stn");
-        let dirt_block = block_registry.block_kind_from_code("drt");
-        let grass_block = block_registry.block_kind_from_code("grs");
+        let stone_block = block_registry.block_kind_from_code("stone");
+        let dirt_block = block_registry.block_kind_from_code("dirt");
+        let grass_block = block_registry.block_kind_from_code("grass");
         FlatGenerator {
             dirt_bottom_z,
             terrain_top_z,

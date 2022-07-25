@@ -166,10 +166,10 @@ impl ObjectPlacer {
         let y_rel = (y - y1) as usize;
 
         // Now place the object
-        let bottom_block = pregenerated.get(x_rel, y_rel, 0);
+        let bottom_block = pregenerated.get(x_rel, y_rel, 0).kind();
         let place_foundation = bottom_block != AIR_BLOCK_KIND && bottom_block != IGNORE_BLOCK;
         for z in from_z..z2 {
-            if pregenerated.overwrite_non_empty || blocks[z] == AIR_BLOCK_KIND {
+            if pregenerated.overwrite_non_empty || blocks[z].kind() == AIR_BLOCK_KIND {
                 if z < z1 {
                     if place_foundation {
                         if let Some(foundation_block) = pregenerated.foundation_block {

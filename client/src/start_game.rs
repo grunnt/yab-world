@@ -5,7 +5,7 @@ use crate::{
     world::worldhandler::WorldHandler,
 };
 use crate::{in_game::InGameState, render::*};
-use common::block::BlockRegistry;
+use common::block::{BlockDef, BlockRegistry};
 use common::chunk::*;
 use common::comms::*;
 use common::world_type::GeneratorType;
@@ -160,14 +160,23 @@ impl State<GameContext> for StartGameState {
                             gametime,
                             block_registry,
                         } => {
+                            let starting_chunk_col = ChunkColumnPos::from_chunk_pos(
+                                ChunkPos::from_world_pos(data.starting_position),
+                            );
+                            info!(
+                                "Sign in confirm - player id {} and position {},{},{}, starting {:?}",
+                                player_id, x, y, z, starting_chunk_col
+                            );
                             data.starting_position = Vec3::new(x, y, z);
                             data.starting_yaw = yaw;
                             data.starting_pitch = pitch;
                             data.player_id = Some(player_id);
                             data.inventory = inventory;
-                            data.daynight.set_time(gametime);
                             debug!("Client gametime {}", gametime);
-                            let blocks = serde_json::from_str(&block_registry).unwrap();
+                            data.daynight.set_time(gametime);
+                            let blocks: Vec<BlockDef> =
+                                serde_json::from_str(&block_registry).unwrap();
+                            debug!("Block registry contains {} blocks", blocks.len());
                             data.block_registry = BlockRegistry::from_blocks(blocks);
                             data.block_renderer = Some(
                                 BlockRenderer::new(
@@ -179,13 +188,6 @@ impl State<GameContext> for StartGameState {
                             );
                             data.physics = Some(Physics::new(&data.block_registry));
                             // Request chunks for preloading
-                            let starting_chunk_col = ChunkColumnPos::from_chunk_pos(
-                                ChunkPos::from_world_pos(data.starting_position),
-                            );
-                            info!(
-                                "Sign in confirm - player id {} and position {},{},{}, starting {:?}",
-                                player_id, x, y, z, starting_chunk_col
-                            );
                             data.world = Some(
                                 WorldHandler::new(
                                     data.config.render_range_chunks as usize,
