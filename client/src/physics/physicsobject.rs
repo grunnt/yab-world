@@ -14,6 +14,7 @@ pub struct PhysicsObject {
     pub size: Vec3,
     pub state: PhysicsObjectState,
     pub on_ground: bool,
+    pub was_in_water: bool,
     pub in_water: bool,
     pub controls: PhysicsObjectControls,
     pub gravity_factor: f32,

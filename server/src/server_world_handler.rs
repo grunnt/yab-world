@@ -2,7 +2,7 @@ use core::time;
 use std::{collections::HashMap, thread::sleep};
 
 use common::{
-    block::Block,
+    block::{Block, BlockRegistry},
     chunk::{
         chunk_buffer::ChunkBuffer, Chunk, ChunkColumn, ChunkColumnPos, ChunkPos, ColumnStatus,
         CHUNK_SIZE, WORLD_HEIGHT_CHUNKS,
@@ -25,11 +25,16 @@ pub struct ServerWorldHandler {
 
 impl ServerWorldHandler {
     /// Create a new world
-    pub fn new(seed: u32, description: &str, world_type: GeneratorType) -> Self {
+    pub fn new(
+        seed: u32,
+        description: &str,
+        world_type: GeneratorType,
+        block_registry: &BlockRegistry,
+    ) -> Self {
         ServerWorldHandler {
             store: WorldStore::new(seed, description, world_type),
             buffer: ChunkBuffer::new(),
-            generator: WorldGenerator::new(seed, world_type),
+            generator: WorldGenerator::new(seed, world_type, block_registry),
             generate_requests: HashMap::new(),
             max_outstanding_work: num_cpus::get() * 2,
             outstanding_work: 0,
@@ -37,13 +42,13 @@ impl ServerWorldHandler {
     }
 
     /// Load an existing world
-    pub fn load(seed: u32) -> Self {
+    pub fn load(seed: u32, block_registry: &BlockRegistry) -> Self {
         let store = WorldStore::load(seed).unwrap();
         let world_type = store.world_def().world_type;
         ServerWorldHandler {
             store,
             buffer: ChunkBuffer::new(),
-            generator: WorldGenerator::new(seed, world_type),
+            generator: WorldGenerator::new(seed, world_type, block_registry),
             generate_requests: HashMap::new(),
             max_outstanding_work: num_cpus::get() * 2,
             outstanding_work: 0,

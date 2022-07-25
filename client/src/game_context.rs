@@ -2,11 +2,11 @@ use crate::render::BlockRenderer;
 use crate::world::worldhandler::WorldHandler;
 use crate::*;
 use crate::{client_config::ClientConfig, gui::gui_renderer::GuiRenderer};
+use common::block::*;
 use common::comms::*;
 use common::daynight::DayNight;
 use common::inventory::Inventory;
 use common::player::PlayerData;
-use common::{block::*, resource::ResourceRegistry};
 use gamework::video::*;
 use nalgebra_glm::*;
 use server::YabServer;
@@ -25,7 +25,6 @@ pub struct GameContext {
     pub player_position_handle: ParticlePositionHandle,
     pub player_target_handle: ParticlePositionHandle,
     pub block_registry: BlockRegistry,
-    pub resource_registry: ResourceRegistry,
     pub seed: u32,
     pub description: String,
     pub server: Option<YabServer>,
@@ -39,7 +38,7 @@ pub struct GameContext {
     pub starting_position: Vec3,
     pub starting_yaw: f32,
     pub starting_pitch: f32,
-    pub physics: Physics,
+    pub physics: Option<Physics>,
     pub last_position: Vec3,
     pub last_pos_update_time: Instant,
     pub inventory: Inventory,
@@ -47,7 +46,6 @@ pub struct GameContext {
     pub player_id: Option<u8>,
     pub players: Vec<PlayerData>,
     pub last_sound_position: Vec3,
-    pub was_in_water: bool,
 }
 
 impl GameContext {
@@ -55,7 +53,6 @@ impl GameContext {
         GameContext {
             player_id: None,
             block_registry: BlockRegistry::empty(),
-            resource_registry: ResourceRegistry::empty(),
             particles: None,
             dig_common_emitter: None,
             dig_iron_emitter: None,
@@ -78,16 +75,15 @@ impl GameContext {
             starting_pitch: 0.0,
             world: None,
             block_renderer: None,
-            physics: Physics::new(),
+            physics: None,
             last_position: Vec3::new(0.0, 0.0, 0.0),
             last_pos_update_time: Instant::now(),
             inventory: Inventory::new(),
-            selected_block: Block::rock_block(),
+            selected_block: 2,
             config: ClientConfig::load(),
             gui_renderer: None,
             players: Vec::new(),
             last_sound_position: Vec3::zeros(),
-            was_in_water: false,
         }
     }
 
@@ -127,30 +123,34 @@ impl GameContext {
         self.gui_renderer.as_mut().unwrap()
     }
 
+    pub fn physics(&self) -> &Physics {
+        self.physics.as_ref().unwrap()
+    }
+
+    pub fn physics_mut(&mut self) -> &mut Physics {
+        self.physics.as_mut().unwrap()
+    }
+
     pub fn step_physics(&mut self) {
         let world = self.world.as_ref().unwrap();
-        self.physics.step(&world);
+        self.physics.as_mut().unwrap().step(&world);
     }
 
     pub fn is_occopied_by_body(&mut self, wbx: i16, wby: i16, wbz: i16) -> bool {
         let world = self.world.as_mut().unwrap();
-        self.physics.is_occopied_by_body(wbx, wby, wbz, world)
+        self.physics
+            .as_mut()
+            .unwrap()
+            .is_occopied_by_body(wbx, wby, wbz, world)
     }
 
-    pub fn dig_effect(&mut self, block_position: Vec3, block_type: Block) {
-        let block_def = self.block_registry.get(block_type);
-        let def = if block_def.yields(2) {
-            self.dig_gold_emitter.as_ref().unwrap().clone()
-        } else if block_def.yields(1) {
-            self.dig_iron_emitter.as_ref().unwrap().clone()
-        } else {
-            self.dig_common_emitter.as_ref().unwrap().clone()
-        };
+    pub fn dig_effect(&mut self, block_position: Vec3) {
+        let emitter_def = self.dig_common_emitter.as_ref().unwrap().clone();
         let player_position_handle = self.player_position_handle;
         self.particles_mut().emitter(
             ParticlePosition::Fixed(block_position),
             ParticlePosition::Handle(player_position_handle),
-            def,
+            emitter_def,
         );
         let expl_def = self.dig_explosion_emitter.as_ref().unwrap().clone();
         self.particles_mut().emitter(

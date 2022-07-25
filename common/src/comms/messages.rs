@@ -256,7 +256,6 @@ pub enum ServerMessage {
         inventory: Inventory,
         gametime: f32,
         block_registry: String,
-        resource_registry: String,
     },
     ChunkColumn {
         col: ChunkColumnPos,
@@ -317,7 +316,6 @@ impl SerializeMessage<ServerMessage> for ServerMessage {
                 inventory,
                 gametime,
                 block_registry,
-                resource_registry,
             } => {
                 SM_VARIANT_SIGN_IN_CONFIRM.write_to(writer)?;
                 player_id.write_to(writer)?;
@@ -329,7 +327,6 @@ impl SerializeMessage<ServerMessage> for ServerMessage {
                 inventory.write_to(writer)?;
                 gametime.write_to(writer)?;
                 block_registry.write_to(writer)?;
-                resource_registry.write_to(writer)?;
             }
             ServerMessage::ChunkColumn { col, block_data } => {
                 SM_VARIANT_CHUNK_COLUMN.write_to(writer)?;
@@ -411,7 +408,6 @@ impl SerializeMessage<ServerMessage> for ServerMessage {
                 let inventory = Inventory::read_from(reader)?;
                 let gametime = f32::read_from(reader)?;
                 let block_registry = String::read_from(reader)?;
-                let resource_registry = String::read_from(reader)?;
                 Ok(ServerMessage::SignInConfirm {
                     player_id,
                     x,
@@ -422,7 +418,6 @@ impl SerializeMessage<ServerMessage> for ServerMessage {
                     inventory,
                     gametime,
                     block_registry,
-                    resource_registry,
                 })
             }
             SM_VARIANT_CHUNK_COLUMN => {
@@ -508,7 +503,7 @@ impl SerializeMessage<ServerMessage> for ServerMessage {
 #[cfg(test)]
 mod serialize_server_messages {
 
-    use crate::{block::BlockRegistry, comms::*, resource::ResourceRegistry};
+    use crate::{block::BlockRegistry, comms::*};
     use crate::{chunk::*, inventory::Inventory};
 
     #[test]
@@ -527,7 +522,6 @@ mod serialize_server_messages {
             inventory,
             gametime: 1.23,
             block_registry: serde_json::to_string(&BlockRegistry::default()).unwrap(),
-            resource_registry: serde_json::to_string(&ResourceRegistry::default()).unwrap(),
         });
     }
 

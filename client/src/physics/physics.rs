@@ -22,15 +22,17 @@ pub struct Physics {
     max_velocity: f32,
     next_object_handle: u32,
     objects: HashMap<u32, PhysicsObject>,
+    water_block: Block,
 }
 
 impl Physics {
-    pub fn new() -> Physics {
+    pub fn new(block_registry: &BlockRegistry) -> Physics {
         Physics {
             gravity: 0.015,
             max_velocity: 100.0, // 0.8, // Should never be >= 1.0 to prevent tunneling
             next_object_handle: 0,
             objects: HashMap::new(),
+            water_block: block_registry.block_kind_from_code("wtr"),
         }
     }
 
@@ -42,6 +44,7 @@ impl Physics {
             size,
             state: PhysicsObjectState::Flying,
             on_ground: false,
+            was_in_water: false,
             in_water: false,
             controls: PhysicsObjectControls::new(),
             gravity_factor: 1.0,
@@ -101,7 +104,7 @@ impl Physics {
             .chunks
             .get_block(pos.x as i16, pos.y as i16, pos.z as i16)
             .kind()
-            == Block::water_block()
+            == self.water_block
     }
 
     pub fn is_occopied_by_body(
@@ -113,9 +116,7 @@ impl Physics {
     ) -> bool {
         // Temporarily set block to do detection
         let old_block = world.chunks.get_block(wbx, wby, wbz);
-        world
-            .chunks
-            .set_block(wbx, wby, wbz, Block::bedrock_block());
+        world.chunks.set_block(wbx, wby, wbz, BEDROCK_BLOCK);
         for (_, object) in &mut self.objects {
             let p1 = object.position - object.size / 2.0;
             let p2 = object.position + object.size / 2.0;
@@ -275,7 +276,8 @@ impl Physics {
                 }
 
                 // Determine whether the object is in the water
-                let in_water = world
+                object.was_in_water = object.in_water;
+                object.in_water = world
                     .chunks
                     .get_block(
                         object.position.x as i16,
@@ -283,8 +285,7 @@ impl Physics {
                         object.position.z as i16,
                     )
                     .kind()
-                    == Block::water_block();
-                object.in_water = in_water;
+                    == self.water_block;
 
                 // Add some buoyancy
                 if object.in_water {

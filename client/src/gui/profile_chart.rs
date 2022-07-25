@@ -100,17 +100,21 @@ impl Widget<GuiRenderer> for ProfileChart {
             let swap_duration = frame[3] * y_scale;
             let x = x + dx + self.padding;
             let y2 = y1 - other_duration;
+            // Gray: "other" activity
             context
                 .primitive_render_mut()
                 .line(x, y1, x, y2, &ColorRGBA::new(0.6, 0.6, 0.6, 1.0));
+            // Green: update game state
             let y3 = y2 - update_duration;
             context
                 .primitive_render_mut()
                 .line(x, y2, x, y3, &ColorRGBA::new(0.4, 0.9, 0.4, 1.0));
+            // Red: rendering
             let y4 = y3 - render_duration;
             context
                 .primitive_render_mut()
                 .line(x, y3, x, y4, &ColorRGBA::new(0.8, 0.4, 0.4, 1.0));
+            // White: buffer swap
             let y5 = y4 - swap_duration;
             context
                 .primitive_render_mut()

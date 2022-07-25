@@ -20,10 +20,10 @@ impl ChunkBuffer {
             if chunk.is_initialized() {
                 return chunk.get_block_world(wbx, wby, wbz);
             } else {
-                return Block::empty_block();
+                return AIR_BLOCK;
             }
         }
-        Block::empty_block()
+        AIR_BLOCK
     }
 
     // Set a block in a chunk directly, used for collision detection when building
@@ -151,7 +151,8 @@ impl ChunkBuffer {
             if let Some(chunk) = self.get_chunk_pos(cp) {
                 if chunk.is_initialized() {
                     for lbz in (0..CHUNK_SIZE).rev() {
-                        if !chunk.get_block(lbx as usize, lby as usize, lbz).is_empty() {
+                        if chunk.get_block(lbx as usize, lby as usize, lbz).kind() != AIR_BLOCK_KIND
+                        {
                             return cz * CHUNK_SIZE as i16 + lbz as i16;
                         }
                     }

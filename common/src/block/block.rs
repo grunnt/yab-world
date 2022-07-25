@@ -2,14 +2,13 @@ use crate::block::blockregistry::*;
 
 pub const LIGHT_BIT_MASK: u32 = 0xF0000000;
 pub const KIND_BIT_MASK: u32 = 0x00000FFF;
+pub const SOLID_BIT_MASK: u32 = 0x00001000;
+pub const TRANSPARENT_BIT_MASK: u32 = 0x00002000;
 
 pub type Block = u32;
 
 pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
     fn kind(&self) -> Block;
-
-    /// Special "air" block a.k.a. empty space
-    fn is_empty(&self) -> bool;
 
     /// If true light will not pass through
     fn is_opaque(&self) -> bool;
@@ -26,37 +25,9 @@ pub trait BlockTrait: Copy + Clone + PartialEq + Eq {
     /// If true objects can pass through
     fn is_passable(&self) -> bool;
 
-    fn is_rocky(&self) -> bool;
+    fn toggle_transparency(&mut self);
 
-    fn empty_block() -> Self;
-
-    fn water_block() -> Self;
-
-    fn dirt_block() -> Self;
-
-    fn grass_block() -> Self;
-
-    fn rock_block() -> Self;
-
-    fn sand_block() -> Self;
-
-    fn sandstone_block() -> Self;
-
-    fn bricks_block() -> Self;
-
-    fn wood_block() -> Self;
-
-    fn gold_block() -> Self;
-
-    fn iron_block() -> Self;
-
-    fn ice_block() -> Self;
-
-    fn bedrock_block() -> Self;
-
-    fn lamp_block() -> Self;
-
-    fn log_block() -> Self;
+    fn toggle_solidity(&mut self);
 }
 
 impl BlockTrait for u32 {
@@ -64,87 +35,32 @@ impl BlockTrait for u32 {
         (self & KIND_BIT_MASK) as Block
     }
 
-    fn is_empty(&self) -> bool {
-        self.kind() == AIR_BLOCK
-    }
-
     fn is_opaque(&self) -> bool {
-        self.kind() > TRANSPARENT_MAX_ID
+        (self & TRANSPARENT_BIT_MASK) == 0
     }
 
     fn is_transparent(&self) -> bool {
-        self.kind() <= TRANSPARENT_MAX_ID
+        (self & TRANSPARENT_BIT_MASK) > 0
     }
 
     fn is_translucent(&self) -> bool {
-        let kind = self.kind();
-        kind > AIR_BLOCK && kind <= TRANSPARENT_MAX_ID
+        self.kind() != AIR_BLOCK_KIND && self.is_transparent()
     }
 
     fn is_solid(&self) -> bool {
-        self.kind() >= SOLID_MIN_ID
+        (self & SOLID_BIT_MASK) > 0
     }
 
     fn is_passable(&self) -> bool {
-        self.kind() < SOLID_MIN_ID
+        (self & SOLID_BIT_MASK) == 0
     }
 
-    fn is_rocky(&self) -> bool {
-        let kind = self.kind();
-        kind == ROCK_BLOCK || kind == IRON_BLOCK || kind == GOLD_BLOCK || kind == BEDROCK_BLOCK
+    fn toggle_transparency(&mut self) {
+        *self = *self ^ TRANSPARENT_BIT_MASK;
     }
 
-    fn empty_block() -> Self {
-        AIR_BLOCK
-    }
-    fn water_block() -> Self {
-        WATER_BLOCK
-    }
-    fn dirt_block() -> Self {
-        DIRT_BLOCK
-    }
-    fn grass_block() -> Self {
-        GRASS_BLOCK
-    }
-    fn rock_block() -> Self {
-        ROCK_BLOCK
-    }
-    fn sand_block() -> Self {
-        SAND_BLOCK
-    }
-    fn sandstone_block() -> Self {
-        SANDSTONE_BLOCK
-    }
-    fn bricks_block() -> Self {
-        BRICKS_BLOCK
-    }
-
-    fn wood_block() -> Self {
-        WOOD_BLOCK
-    }
-
-    fn iron_block() -> Self {
-        IRON_BLOCK
-    }
-
-    fn gold_block() -> Self {
-        GOLD_BLOCK
-    }
-
-    fn bedrock_block() -> Self {
-        BEDROCK_BLOCK
-    }
-
-    fn lamp_block() -> Self {
-        LAMP_BLOCK
-    }
-
-    fn ice_block() -> Self {
-        ICE_BLOCK
-    }
-
-    fn log_block() -> Self {
-        LOG_BLOCK
+    fn toggle_solidity(&mut self) {
+        *self = *self ^ SOLID_BIT_MASK;
     }
 }
 

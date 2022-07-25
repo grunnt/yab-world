@@ -9,13 +9,22 @@ use super::Generator;
 pub struct FlatGenerator {
     dirt_bottom_z: usize,
     terrain_top_z: usize,
+    stone_block: Block,
+    dirt_block: Block,
+    grass_block: Block,
 }
 
 impl FlatGenerator {
-    pub fn new(dirt_bottom_z: usize, terrain_top_z: usize) -> Self {
+    pub fn new(dirt_bottom_z: usize, terrain_top_z: usize, block_registry: &BlockRegistry) -> Self {
+        let stone_block = block_registry.block_kind_from_code("stn");
+        let dirt_block = block_registry.block_kind_from_code("drt");
+        let grass_block = block_registry.block_kind_from_code("grs");
         FlatGenerator {
             dirt_bottom_z,
             terrain_top_z,
+            stone_block,
+            dirt_block,
+            grass_block,
         }
     }
 }
@@ -24,16 +33,14 @@ impl Generator for FlatGenerator {
     fn generate(&mut self, _x: i16, _y: i16) -> Vec<Block> {
         let mut blocks = Vec::new();
         for z in 0..WORLD_HEIGHT_CHUNKS * CHUNK_SIZE {
-            let block = if z <= 2 {
-                Block::bedrock_block()
-            } else if z <= self.dirt_bottom_z {
-                Block::rock_block()
+            let block = if z <= self.dirt_bottom_z {
+                self.stone_block
             } else if z < self.terrain_top_z {
-                Block::dirt_block()
+                self.dirt_block
             } else if z == self.terrain_top_z {
-                Block::grass_block()
+                self.grass_block
             } else {
-                Block::empty_block()
+                AIR_BLOCK
             };
             blocks.push(block);
         }

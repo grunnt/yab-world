@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::render::*;
 use common::block::*;
 use common::chunk::chunk_buffer::ChunkBuffer;
@@ -45,7 +43,7 @@ const NORMALS: [u8; 6] = [
 ];
 
 pub struct BlockMesher {
-    block_texture_map: HashMap<Block, [f32; 6]>,
+    block_texture_map: Vec<Option<[f32; 6]>>,
 }
 
 impl BlockMesher {
@@ -56,7 +54,7 @@ impl BlockMesher {
     }
 
     fn texture(&self, block_type: Block, face: usize) -> f32 {
-        self.block_texture_map.get(&block_type).unwrap()[face]
+        self.block_texture_map[block_type as usize].unwrap()[face]
     }
 
     // Generate mesh vertices
@@ -83,7 +81,7 @@ impl BlockMesher {
                             let neighbour = chunk.get_block(x + 1, y, z);
                             let vertices_opt = if neighbour.is_opaque() {
                                 Some(&mut vertices)
-                            } else if block.is_empty() && neighbour.is_translucent() {
+                            } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                                 Some(&mut translucent_vertices)
                             } else {
                                 None
@@ -104,7 +102,7 @@ impl BlockMesher {
                             let neighbour = chunk.get_block(x - 1, y, z);
                             let vertices_opt = if neighbour.is_opaque() {
                                 Some(&mut vertices)
-                            } else if block.is_empty() && neighbour.is_translucent() {
+                            } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                                 Some(&mut translucent_vertices)
                             } else {
                                 None
@@ -125,7 +123,7 @@ impl BlockMesher {
                             let neighbour = chunk.get_block(x, y + 1, z);
                             let vertices_opt = if neighbour.is_opaque() {
                                 Some(&mut vertices)
-                            } else if block.is_empty() && neighbour.is_translucent() {
+                            } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                                 Some(&mut translucent_vertices)
                             } else {
                                 None
@@ -146,7 +144,7 @@ impl BlockMesher {
                             let neighbour = chunk.get_block(x, y - 1, z);
                             let vertices_opt = if neighbour.is_opaque() {
                                 Some(&mut vertices)
-                            } else if block.is_empty() && neighbour.is_translucent() {
+                            } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                                 Some(&mut translucent_vertices)
                             } else {
                                 None
@@ -167,7 +165,7 @@ impl BlockMesher {
                             let neighbour = chunk.get_block(x, y, z + 1);
                             let vertices_opt = if neighbour.is_opaque() {
                                 Some(&mut vertices)
-                            } else if block.is_empty() && neighbour.is_translucent() {
+                            } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                                 Some(&mut translucent_vertices)
                             } else {
                                 None
@@ -188,7 +186,7 @@ impl BlockMesher {
                             let neighbour = chunk.get_block(x, y, z - 1);
                             let vertices_opt = if neighbour.is_opaque() {
                                 Some(&mut vertices)
-                            } else if block.is_empty() && neighbour.is_translucent() {
+                            } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                                 Some(&mut translucent_vertices)
                             } else {
                                 None
@@ -222,7 +220,7 @@ impl BlockMesher {
                     let neighbour = xp.get_block(0, y, z);
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
-                    } else if block.is_empty() && neighbour.is_translucent() {
+                    } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                         Some(&mut translucent_vertices)
                     } else {
                         None
@@ -254,7 +252,7 @@ impl BlockMesher {
                     let neighbour = xm.get_block(CHUNK_SIZE - 1, y, z);
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
-                    } else if block.is_empty() && neighbour.is_translucent() {
+                    } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                         Some(&mut translucent_vertices)
                     } else {
                         None
@@ -286,7 +284,7 @@ impl BlockMesher {
                     let neighbour = yp.get_block(x, 0, z);
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
-                    } else if block.is_empty() && neighbour.is_translucent() {
+                    } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                         Some(&mut translucent_vertices)
                     } else {
                         None
@@ -318,7 +316,7 @@ impl BlockMesher {
                     let neighbour = ym.get_block(x, CHUNK_SIZE - 1, z);
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
-                    } else if block.is_empty() && neighbour.is_translucent() {
+                    } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                         Some(&mut translucent_vertices)
                     } else {
                         None
@@ -350,11 +348,11 @@ impl BlockMesher {
                     let neighbour = if let Some(chunk) = zp {
                         chunk.get_block(x, y, 0)
                     } else {
-                        Block::empty_block()
+                        AIR_BLOCK
                     };
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
-                    } else if block.is_empty() && neighbour.is_translucent() {
+                    } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                         Some(&mut translucent_vertices)
                     } else {
                         None
@@ -386,11 +384,11 @@ impl BlockMesher {
                     let neighbour = if let Some(chunk) = zm {
                         chunk.get_block(x, y, CHUNK_SIZE - 1)
                     } else {
-                        Block::bedrock_block()
+                        BEDROCK_BLOCK
                     };
                     let vertices_opt = if neighbour.is_opaque() {
                         Some(&mut vertices)
-                    } else if block.is_empty() && neighbour.is_translucent() {
+                    } else if block.kind() == AIR_BLOCK_KIND && neighbour.is_translucent() {
                         Some(&mut translucent_vertices)
                     } else {
                         None

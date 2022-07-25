@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use gamework::video::color::ColorRGBA;
+use gamework::video::{color::ColorRGBA, TextAlignment};
 
 use crate::*;
 
@@ -16,6 +16,7 @@ pub struct BlockButton {
     emissive: bool,
     size: f32,
     padding: f32,
+    count: u32,
 }
 
 impl BlockButton {
@@ -25,6 +26,7 @@ impl BlockButton {
         texture_name_right: &String,
         size: f32,
         emissive: bool,
+        count: u32,
     ) -> BlockButton {
         BlockButton {
             texture_name_up: texture_name_up.clone(),
@@ -36,6 +38,7 @@ impl BlockButton {
             emissive,
             size,
             padding: 7.0,
+            count,
         }
     }
 }
@@ -160,6 +163,15 @@ impl Widget<GuiRenderer> for BlockButton {
             },
             self.texture_id_right.unwrap(),
         );
+        // TODO: counts not working yet so temporarily hidden
+        // context.text_mut().place_string(
+        //     x1,
+        //     y1,
+        //     &self.count.to_string(),
+        //     TextAlignment::Start,
+        //     TextAlignment::Start,
+        //     1,
+        // );
     }
 
     fn get_value(&self) -> GuiValue {

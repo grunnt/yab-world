@@ -23,12 +23,13 @@ impl ColumnGenerator {
         seed: u32,
         poi_object_list: Arc<Vec<PregeneratedObject>>,
         tree_object_list: Arc<Vec<PregeneratedObject>>,
+        block_registry: &BlockRegistry,
     ) -> Self {
         ColumnGenerator {
-            hills_generator: HillsGenerator::new(seed),
-            flat_generator: FlatGenerator::new(32, 36),
-            water_generator: WaterWorldGenerator::new(seed),
-            alien_generator: AlienGenerator::new(seed),
+            hills_generator: HillsGenerator::new(seed, block_registry),
+            flat_generator: FlatGenerator::new(32, 36, block_registry),
+            water_generator: WaterWorldGenerator::new(seed, block_registry),
+            alien_generator: AlienGenerator::new(seed, block_registry),
             poi_objects: ObjectPlacer::new(seed, poi_object_list, 32, 1, 0.2, false, false),
             tree_objects: ObjectPlacer::new(seed, tree_object_list, 13, 0, 0.35, true, true),
         }
@@ -46,7 +47,7 @@ impl ColumnGenerator {
         for z in 0..WORLD_HEIGHT_CHUNKS {
             column.push(Chunk::new_solid(
                 ChunkPos::new(col.x, col.y, z as i16),
-                Block::empty_block(),
+                AIR_BLOCK,
             ));
         }
         // Generate the column in 1x1 columns of world height

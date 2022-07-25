@@ -10,7 +10,7 @@ use gamework::*;
 pub struct BlockSelectState {
     gui: Gui<GuiRenderer>,
     back_button: WidgetId,
-    block_buttons: HashMap<WidgetId, Block>,
+    block_buttons: HashMap<WidgetId, String>,
 }
 
 impl BlockSelectState {
@@ -54,10 +54,7 @@ impl BlockSelectState {
         let mut column_index = 0;
         let mut row_index = 0;
         let mut block_buttons = HashMap::new();
-        let mut block_types: Vec<Block> = block_registry.all_blocks().keys().copied().collect();
-        block_types.sort();
-        for block_type in &block_types {
-            let block_def = block_registry.get(*block_type);
+        for block_def in block_registry.all_blocks() {
             if block_def.buildable {
                 let widget_id = gui.place(
                     block_grid,
@@ -69,10 +66,11 @@ impl BlockSelectState {
                         &block_def.textures.get(FACE_YP).unwrap().clone(),
                         64.0,
                         block_def.light > 0,
+                        200 + (column_index + row_index) as u32,
                     )),
                     CellAlignment::Center,
                 );
-                block_buttons.insert(widget_id, *block_type);
+                block_buttons.insert(widget_id, block_def.code.clone());
                 column_index += 1;
                 if column_index >= blocks_in_row {
                     column_index = 0;
@@ -131,7 +129,7 @@ impl State<GameContext> for BlockSelectState {
                         return StateCommand::CloseState;
                     } else if self.block_buttons.contains_key(&widget_id) {
                         let block_type = self.block_buttons.get(&widget_id).unwrap();
-                        data.selected_block = *block_type;
+                        data.selected_block = data.block_registry.block_kind_from_code(block_type);
                         context.input_mut().set_mouse_captured(true);
                         return StateCommand::CloseState;
                     }

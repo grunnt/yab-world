@@ -1,6 +1,6 @@
-use super::Block;
-use crate::resource::*;
-use gamework::{video::color::ColorRGBu8, Assets};
+use super::block::{SOLID_BIT_MASK, TRANSPARENT_BIT_MASK};
+use super::{Block, BlockTrait};
+use gamework::Assets;
 use log::*;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -14,693 +14,235 @@ pub const FACE_ZP: usize = 4;
 pub const FACE_ZM: usize = 5;
 
 // Air is a special case with ID 0
-pub const AIR_BLOCK: u32 = 0;
-// Solid (not passable) blocks have an ID from 256 or higher (this partially overlaps with translucent block IDs)
-pub const SOLID_MIN_ID: u32 = 256;
-// Translucent blocks have an ID from 1 to 511
-pub const TRANSPARENT_MAX_ID: u32 = 511;
+pub const AIR_BLOCK_KIND: u32 = 0;
+pub const AIR_BLOCK: u32 = AIR_BLOCK_KIND | TRANSPARENT_BIT_MASK;
+pub const BEDROCK_BLOCK_KIND: u32 = 1;
+pub const BEDROCK_BLOCK: u32 = BEDROCK_BLOCK_KIND | SOLID_BIT_MASK;
 
-pub const WATER_BLOCK: u32 = 1;
-pub const LEAVES_BLOCK: u32 = 257;
-
-pub const DIRT_BLOCK: u32 = 512;
-pub const GRASS_BLOCK: u32 = 513;
-pub const ROCK_BLOCK: u32 = 514;
-pub const SAND_BLOCK: u32 = 515;
-pub const SANDSTONE_BLOCK: u32 = 516;
-pub const WOOD_BLOCK: u32 = 517;
-pub const LOG_BLOCK: u32 = 518;
-pub const BEDROCK_BLOCK: u32 = 519;
-pub const LAMP_BLOCK: u32 = 520;
-pub const IRON_BLOCK: u32 = 521;
-pub const GOLD_BLOCK: u32 = 522;
-pub const ICE_BLOCK: u32 = 523;
-pub const BRICKS_BLOCK: u32 = 524;
-
-// Special block for world generation that should never be used in the world itself
+// Special block ID for world generation that should never be used in the world itself
 pub const IGNORE_BLOCK: u32 = std::u32::MAX;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockDef {
+    pub code: String,
     pub name: String,
-    pub color: ColorRGBu8,
     pub textures: Vec<String>,
-    pub light: u8,
+    pub solid: bool,
+    pub transparent: bool,
     pub buildable: bool,
-    pub resource_yield: Vec<(Resource, u32)>,
-    pub resource_cost: Vec<(Resource, u32)>,
+    pub light: u8,
+    pub block_yield: Vec<(Block, u32)>,
+    pub block_cost: Vec<(Block, u32)>,
 }
 
-impl BlockDef {
-    pub fn yields(&self, resource: Resource) -> bool {
-        for res in &self.resource_yield {
-            if res.0 == resource {
-                return true;
-            }
-        }
-        false
-    }
-
-    pub fn costs(&self, resource: Resource) -> bool {
-        for res in &self.resource_cost {
-            if res.0 == resource {
-                return true;
-            }
-        }
-        false
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct BlockRegistry {
-    blocks: HashMap<Block, BlockDef>,
+    blocks: Vec<BlockDef>,
     texture_index_map: HashMap<String, usize>,
-    block_texture_map: HashMap<Block, [f32; 6]>,
+    block_texture_map: Vec<Option<[f32; 6]>>,
 }
 
 impl BlockRegistry {
     pub fn empty() -> BlockRegistry {
         BlockRegistry {
-            blocks: HashMap::new(),
+            blocks: Vec::new(),
             texture_index_map: HashMap::new(),
-            block_texture_map: HashMap::new(),
+            block_texture_map: Vec::new(),
         }
     }
 
-    pub fn default() -> BlockRegistry {
-        let mut blocks = HashMap::new();
-
-        blocks.insert(
-            AIR_BLOCK,
-            BlockDef {
-                name: "Air".to_string(),
-                color: ColorRGBu8::new(0, 0, 0),
-                textures: Vec::new(),
-                light: 0,
-                buildable: false,
-                resource_yield: vec![],
-                resource_cost: vec![],
-            },
-        );
-        blocks.insert(
-            WATER_BLOCK,
-            BlockDef {
-                name: "Water".to_string(),
-                color: ColorRGBu8::new(79, 190, 255),
-                textures: vec![
-                    "water".to_string(),
-                    "water".to_string(),
-                    "water".to_string(),
-                    "water".to_string(),
-                    "water".to_string(),
-                    "water".to_string(),
-                ],
-                light: 0,
-                buildable: false,
-                resource_yield: vec![],
-                resource_cost: vec![],
-            },
-        );
-        blocks.insert(
-            LEAVES_BLOCK,
-            BlockDef {
-                name: "Leaves".to_string(),
-                color: ColorRGBu8::new(111, 153, 3),
-                textures: vec![
-                    "leaves".to_string(),
-                    "leaves".to_string(),
-                    "leaves".to_string(),
-                    "leaves".to_string(),
-                    "leaves".to_string(),
-                    "leaves".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        blocks.insert(
-            DIRT_BLOCK,
-            BlockDef {
-                name: "Dirt".to_string(),
-                color: ColorRGBu8::new(127, 90, 61),
-                textures: vec![
-                    "dirt".to_string(),
-                    "dirt".to_string(),
-                    "dirt".to_string(),
-                    "dirt".to_string(),
-                    "dirt".to_string(),
-                    "dirt".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 2)],
-            },
-        );
-        blocks.insert(
-            GRASS_BLOCK,
-            BlockDef {
-                name: "Grass".to_string(),
-                color: ColorRGBu8::new(87, 133, 75),
-                textures: vec![
-                    "grass_block_side".to_string(),
-                    "grass_block_side".to_string(),
-                    "grass_block_side".to_string(),
-                    "grass_block_side".to_string(),
-                    "grass_block_top".to_string(),
-                    "dirt".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 2)],
-            },
-        );
-        blocks.insert(
-            ROCK_BLOCK,
-            BlockDef {
-                name: "Rock".to_string(),
-                color: ColorRGBu8::new(125, 122, 121),
-                textures: vec![
-                    "stone".to_string(),
-                    "stone".to_string(),
-                    "stone".to_string(),
-                    "stone".to_string(),
-                    "stone".to_string(),
-                    "stone".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 2)],
-                resource_cost: vec![(0, 3)],
-            },
-        );
-        blocks.insert(
-            SAND_BLOCK,
-            BlockDef {
-                name: "Sand".to_string(),
-                color: ColorRGBu8::new(213, 198, 153),
-                textures: vec![
-                    "sand".to_string(),
-                    "sand".to_string(),
-                    "sand".to_string(),
-                    "sand".to_string(),
-                    "sand".to_string(),
-                    "sand".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 2)],
-            },
-        );
-        blocks.insert(
-            SANDSTONE_BLOCK,
-            BlockDef {
-                name: "Sandstone".to_string(),
-                color: ColorRGBu8::new(173, 162, 126),
-                textures: vec![
-                    "sandstone".to_string(),
-                    "sandstone".to_string(),
-                    "sandstone".to_string(),
-                    "sandstone".to_string(),
-                    "sandstone_top".to_string(),
-                    "sandstone_bottom".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 2)],
-            },
-        );
-        blocks.insert(
-            WOOD_BLOCK,
-            BlockDef {
-                name: "Wood".to_string(),
-                color: ColorRGBu8::new(106, 82, 48),
-                textures: vec![
-                    "oak_planks".to_string(),
-                    "oak_planks".to_string(),
-                    "oak_planks".to_string(),
-                    "oak_planks".to_string(),
-                    "oak_planks".to_string(),
-                    "oak_planks".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 2)],
-            },
-        );
-        blocks.insert(
-            LOG_BLOCK,
-            BlockDef {
-                name: "Log".to_string(),
-                color: ColorRGBu8::new(106, 82, 48),
-                textures: vec![
-                    "oak_log".to_string(),
-                    "oak_log".to_string(),
-                    "oak_log".to_string(),
-                    "oak_log".to_string(),
-                    "oak_log_top".to_string(),
-                    "oak_log_top".to_string(),
-                ],
-                light: 0,
-                buildable: false,
-                resource_yield: vec![(0, 2)],
-                resource_cost: vec![(0, 0)],
-            },
-        );
-        blocks.insert(
-            BEDROCK_BLOCK,
-            BlockDef {
-                name: "Bedrock".to_string(),
-                color: ColorRGBu8::new(25, 15, 20),
-                textures: vec![
-                    "bedrock".to_string(),
-                    "bedrock".to_string(),
-                    "bedrock".to_string(),
-                    "bedrock".to_string(),
-                    "bedrock".to_string(),
-                    "bedrock".to_string(),
-                ],
-                light: 0,
-                buildable: false,
-                resource_yield: vec![],
-                resource_cost: vec![],
-            },
-        );
-        blocks.insert(
-            LAMP_BLOCK,
-            BlockDef {
-                name: "Lamp".to_string(),
-                color: ColorRGBu8::new(255, 255, 255),
-                textures: vec![
-                    "lamp".to_string(),
-                    "lamp".to_string(),
-                    "lamp".to_string(),
-                    "lamp".to_string(),
-                    "lamp".to_string(),
-                    "lamp".to_string(),
-                ],
-                light: 15,
-                buildable: true,
-                resource_yield: vec![(2, 1)],
-                resource_cost: vec![(2, 1)],
-            },
-        );
-        blocks.insert(
-            IRON_BLOCK,
-            BlockDef {
-                name: "Iron".to_string(),
-                color: ColorRGBu8::new(250, 220, 25),
-                textures: vec![
-                    "ore_iron".to_string(),
-                    "ore_iron".to_string(),
-                    "ore_iron".to_string(),
-                    "ore_iron".to_string(),
-                    "ore_iron".to_string(),
-                    "ore_iron".to_string(),
-                ],
-                light: 0,
-                buildable: false,
-                resource_yield: vec![(1, 1)],
-                resource_cost: vec![],
-            },
-        );
-        blocks.insert(
-            GOLD_BLOCK,
-            BlockDef {
-                name: "Gold".to_string(),
-                color: ColorRGBu8::new(250, 220, 25),
-                textures: vec![
-                    "ore_gold".to_string(),
-                    "ore_gold".to_string(),
-                    "ore_gold".to_string(),
-                    "ore_gold".to_string(),
-                    "ore_gold".to_string(),
-                    "ore_gold".to_string(),
-                ],
-                light: 0,
-                buildable: false,
-                resource_yield: vec![(2, 1)],
-                resource_cost: vec![],
-            },
-        );
-        blocks.insert(
-            ICE_BLOCK,
-            BlockDef {
-                name: "Ice".to_string(),
-                color: ColorRGBu8::new(250, 220, 25),
-                textures: vec![
-                    "ice".to_string(),
-                    "ice".to_string(),
-                    "ice".to_string(),
-                    "ice".to_string(),
-                    "ice".to_string(),
-                    "ice".to_string(),
-                ],
-                light: 0,
-                buildable: false,
-                resource_yield: vec![],
-                resource_cost: vec![],
-            },
-        );
-        blocks.insert(
-            BRICKS_BLOCK,
-            BlockDef {
-                name: "Stone bricks".to_string(),
-                color: ColorRGBu8::new(218, 224, 224),
-                textures: vec![
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                    "stone_bricks".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        let mut index = BRICKS_BLOCK + 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Small Lamp".to_string(),
-                color: ColorRGBu8::new(255, 255, 255),
-                textures: vec![
-                    "small_lamp".to_string(),
-                    "small_lamp".to_string(),
-                    "small_lamp".to_string(),
-                    "small_lamp".to_string(),
-                    "small_lamp".to_string(),
-                    "small_lamp".to_string(),
-                ],
-                light: 10,
-                buildable: true,
-                resource_yield: vec![(1, 1)],
-                resource_cost: vec![(1, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "White concrete".to_string(),
-                color: ColorRGBu8::new(218, 224, 224),
-                textures: vec![
-                    "white_concrete".to_string(),
-                    "white_concrete".to_string(),
-                    "white_concrete".to_string(),
-                    "white_concrete".to_string(),
-                    "white_concrete".to_string(),
-                    "white_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Gray concrete".to_string(),
-                color: ColorRGBu8::new(152, 152, 144),
-                textures: vec![
-                    "gray_concrete".to_string(),
-                    "gray_concrete".to_string(),
-                    "gray_concrete".to_string(),
-                    "gray_concrete".to_string(),
-                    "gray_concrete".to_string(),
-                    "gray_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Black concrete".to_string(),
-                textures: vec![
-                    "black_concrete".to_string(),
-                    "black_concrete".to_string(),
-                    "black_concrete".to_string(),
-                    "black_concrete".to_string(),
-                    "black_concrete".to_string(),
-                    "black_concrete".to_string(),
-                ],
-                color: ColorRGBu8::new(5, 5, 5),
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Red concrete".to_string(),
-                color: ColorRGBu8::new(166, 62, 61),
-                textures: vec![
-                    "red_concrete".to_string(),
-                    "red_concrete".to_string(),
-                    "red_concrete".to_string(),
-                    "red_concrete".to_string(),
-                    "red_concrete".to_string(),
-                    "red_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Brown concrete".to_string(),
-                color: ColorRGBu8::new(127, 92, 60),
-                textures: vec![
-                    "brown_concrete".to_string(),
-                    "brown_concrete".to_string(),
-                    "brown_concrete".to_string(),
-                    "brown_concrete".to_string(),
-                    "brown_concrete".to_string(),
-                    "brown_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Orange concrete".to_string(),
-                color: ColorRGBu8::new(233, 128, 3),
-                textures: vec![
-                    "orange_concrete".to_string(),
-                    "orange_concrete".to_string(),
-                    "orange_concrete".to_string(),
-                    "orange_concrete".to_string(),
-                    "orange_concrete".to_string(),
-                    "orange_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Yellow concrete".to_string(),
-                color: ColorRGBu8::new(245, 193, 45),
-                textures: vec![
-                    "yellow_concrete".to_string(),
-                    "yellow_concrete".to_string(),
-                    "yellow_concrete".to_string(),
-                    "yellow_concrete".to_string(),
-                    "yellow_concrete".to_string(),
-                    "yellow_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Green concrete".to_string(),
-                color: ColorRGBu8::new(126, 189, 49),
-                textures: vec![
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                    "green_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Cyan concrete".to_string(),
-                color: ColorRGBu8::new(45, 147, 162),
-                textures: vec![
-                    "cyan_concrete".to_string(),
-                    "cyan_concrete".to_string(),
-                    "cyan_concrete".to_string(),
-                    "cyan_concrete".to_string(),
-                    "cyan_concrete".to_string(),
-                    "cyan_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Blue concrete".to_string(),
-                color: ColorRGBu8::new(66, 162, 212),
-                textures: vec![
-                    "blue_concrete".to_string(),
-                    "blue_concrete".to_string(),
-                    "blue_concrete".to_string(),
-                    "blue_concrete".to_string(),
-                    "blue_concrete".to_string(),
-                    "blue_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Purple concrete".to_string(),
-                color: ColorRGBu8::new(129, 60, 177),
-                textures: vec![
-                    "purple_concrete".to_string(),
-                    "purple_concrete".to_string(),
-                    "purple_concrete".to_string(),
-                    "purple_concrete".to_string(),
-                    "purple_concrete".to_string(),
-                    "purple_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-        index += 1;
-        blocks.insert(
-            index,
-            BlockDef {
-                name: "Pink concrete".to_string(),
-                color: ColorRGBu8::new(225, 131, 168),
-                textures: vec![
-                    "pink_concrete".to_string(),
-                    "pink_concrete".to_string(),
-                    "pink_concrete".to_string(),
-                    "pink_concrete".to_string(),
-                    "pink_concrete".to_string(),
-                    "pink_concrete".to_string(),
-                ],
-                light: 0,
-                buildable: true,
-                resource_yield: vec![(0, 1)],
-                resource_cost: vec![(0, 1)],
-            },
-        );
-
-        let mut registry = BlockRegistry {
-            blocks,
-            texture_index_map: HashMap::new(),
-            block_texture_map: HashMap::new(),
-        };
-        registry.build_texture_index();
+    pub fn from_blocks(blocks: Vec<BlockDef>) -> Self {
+        let mut registry = BlockRegistry::empty();
+        registry.blocks = blocks;
+        registry.build_indexes();
         registry
     }
 
-    fn build_texture_index(&mut self) {
-        // Build map from texture name to texture array index (should be loaded in this order later)
-        let mut texture_index_map = HashMap::new();
-        let mut block_keys: Vec<Block> = self.blocks.keys().map(|k| *k).collect();
-        block_keys.sort();
-        for key in &block_keys {
-            let block_def = self.blocks.get(key).unwrap();
-            for texture in &block_def.textures {
-                if !texture_index_map.contains_key(texture) {
-                    let next = texture_index_map.len();
-                    texture_index_map.insert(texture.clone(), next);
-                }
-            }
-        }
-        // Build map from block type to an array of texture indices
-        let mut block_texture_map = HashMap::new();
-        for (block_type, block_def) in &self.blocks {
-            let mut texture_indices = [0.0; 6];
-            if block_def.textures.len() > 0 {
-                assert!(block_def.textures.len() == 6);
-                for i in 0..6 {
-                    let index = texture_index_map
-                        .get(block_def.textures.get(i).unwrap())
-                        .unwrap();
-                    texture_indices[i] = *index as f32;
-                }
-                block_texture_map.insert(*block_type, texture_indices);
-            }
-        }
-        self.texture_index_map = texture_index_map;
-        self.block_texture_map = block_texture_map;
+    pub fn default() -> BlockRegistry {
+        let mut registry = BlockRegistry::empty();
+
+        // First blocks (index 0 and 1) is always air and bedrock
+        registry.add("air", "Air", Vec::new(), false, true, 0, false);
+        registry.add(
+            "bdr",
+            "Bedrock",
+            vec![
+                "bedrock".to_string(),
+                "bedrock".to_string(),
+                "bedrock".to_string(),
+                "bedrock".to_string(),
+                "bedrock".to_string(),
+                "bedrock".to_string(),
+            ],
+            true,
+            false,
+            0,
+            false,
+        );
+        registry.add(
+            "wtr",
+            "Water",
+            vec![
+                "water".to_string(),
+                "water".to_string(),
+                "water".to_string(),
+                "water".to_string(),
+                "water".to_string(),
+                "water".to_string(),
+            ],
+            false,
+            true,
+            0,
+            false,
+        );
+        registry.add(
+            "stn",
+            "Stone",
+            vec![
+                "stone".to_string(),
+                "stone".to_string(),
+                "stone".to_string(),
+                "stone".to_string(),
+                "stone".to_string(),
+                "stone".to_string(),
+            ],
+            true,
+            false,
+            0,
+            true,
+        );
+        registry.add(
+            "drt",
+            "Dirt",
+            vec![
+                "dirt".to_string(),
+                "dirt".to_string(),
+                "dirt".to_string(),
+                "dirt".to_string(),
+                "dirt".to_string(),
+                "dirt".to_string(),
+            ],
+            true,
+            false,
+            0,
+            true,
+        );
+        registry.add(
+            "snd",
+            "Sand",
+            vec![
+                "sand".to_string(),
+                "sand".to_string(),
+                "sand".to_string(),
+                "sand".to_string(),
+                "sand".to_string(),
+                "sand".to_string(),
+            ],
+            true,
+            false,
+            0,
+            true,
+        );
+        registry.add(
+            "grs",
+            "Grass",
+            vec![
+                "grass_block_side".to_string(),
+                "grass_block_side".to_string(),
+                "grass_block_side".to_string(),
+                "grass_block_side".to_string(),
+                "grass_block_top".to_string(),
+                "dirt".to_string(),
+            ],
+            true,
+            false,
+            0,
+            true,
+        );
+
+        // Set the block yields and costs
+        let stn_id = registry.block_kind_from_code("stn");
+        let drt_id = registry.block_kind_from_code("drt");
+        let snd_id = registry.block_kind_from_code("snd");
+        let grs_id = registry.block_kind_from_code("grs");
+        registry.set_yield_cost(grs_id, vec![(drt_id, 1)], vec![(drt_id, 1)]);
+        registry.set_yield_cost(drt_id, vec![(drt_id, 1)], vec![(drt_id, 1)]);
+        registry.set_yield_cost(snd_id, vec![(snd_id, 1)], vec![(snd_id, 1)]);
+        registry.set_yield_cost(stn_id, vec![(stn_id, 1)], vec![(stn_id, 1)]);
+
+        registry.build_indexes();
+        registry
     }
 
-    pub fn new(folder_path: &Path) -> BlockRegistry {
+    fn add(
+        &mut self,
+        code: &str,
+        name: &str,
+        textures: Vec<String>,
+        solid: bool,
+        transparent: bool,
+        light: u8,
+        buildable: bool,
+    ) -> Block {
+        let index = self.blocks.len() as u32;
+        self.blocks.push(BlockDef {
+            code: code.to_string(),
+            name: name.to_string(),
+            textures,
+            solid,
+            transparent,
+            light,
+            buildable,
+            block_yield: Vec::new(),
+            block_cost: Vec::new(),
+        });
+        return index as Block;
+    }
+
+    pub fn block_from_code(&self, code: &str) -> Block {
+        let mut block = 0;
+        while block < self.blocks.len() {
+            let block_def = &self.blocks[block];
+            if block_def.code == code {
+                let mut block = block as Block;
+                if block_def.transparent {
+                    block.toggle_transparency();
+                }
+                if block_def.solid {
+                    block.toggle_solidity();
+                }
+                return block as Block;
+            }
+            block += 1;
+        }
+        return 0;
+    }
+
+    pub fn block_kind_from_code(&self, code: &str) -> Block {
+        return self.block_from_code(code).kind();
+    }
+
+    pub fn set_block_flags(&self, block: Block) -> Block {
+        let mut block = block.kind();
+        let block_def = &self.blocks[block as usize];
+        if block_def.transparent {
+            block.toggle_transparency();
+        }
+        if block_def.solid {
+            block.toggle_solidity();
+        }
+        return block;
+    }
+
+    /// Load a block definition file from the given path or create a default one if the file cannot be loaded.
+    pub fn load_or_create(folder_path: &Path) -> BlockRegistry {
         let path = folder_path.join("blocks.json");
         match fs::read_to_string(&path) {
             Ok(string) => match serde_json::from_str(&string) {
                 Ok(blocks) => {
-                    let mut registry = BlockRegistry {
-                        blocks,
-                        texture_index_map: HashMap::new(),
-                        block_texture_map: HashMap::new(),
-                    };
-                    registry.build_texture_index();
+                    let mut registry = BlockRegistry::empty();
+                    registry.blocks = blocks;
+                    registry.build_indexes();
                     return registry;
                 }
                 Err(e) => {
@@ -722,11 +264,60 @@ impl BlockRegistry {
         info!("File {:?} created", path);
     }
 
-    pub fn get(&self, id: Block) -> &BlockDef {
-        self.blocks.get(&id).unwrap()
+    fn set_yield_cost(
+        &mut self,
+        block: Block,
+        block_yield: Vec<(Block, u32)>,
+        block_cost: Vec<(Block, u32)>,
+    ) {
+        self.blocks[block as usize].block_yield = block_yield;
+        self.blocks[block as usize].block_yield = block_cost;
     }
 
-    pub fn all_blocks(&self) -> &HashMap<Block, BlockDef> {
+    fn build_indexes(&mut self) {
+        // Build map from texture name to texture array index (should be loaded in this order later)
+        let mut texture_index_map = HashMap::new();
+        let mut block = 0;
+        while block < self.blocks.len() {
+            let block_def = &self.blocks[block];
+            for texture in &block_def.textures {
+                if !texture_index_map.contains_key(texture) {
+                    let next = texture_index_map.len();
+                    texture_index_map.insert(texture.clone(), next);
+                }
+            }
+            block += 1;
+        }
+        // Build map from block type to an array of texture indices
+        let mut block_texture_map = Vec::new();
+        let mut block = 0;
+        while block < self.blocks.len() {
+            let block_def = &self.blocks[block];
+            let mut texture_indices = [0.0; 6];
+            if block_def.textures.len() > 0 {
+                assert!(block_def.textures.len() == 6);
+                for i in 0..6 {
+                    let index = texture_index_map
+                        .get(block_def.textures.get(i).unwrap())
+                        .unwrap();
+                    texture_indices[i] = *index as f32;
+                }
+                block_texture_map.push(Some(texture_indices));
+            } else {
+                block_texture_map.push(None);
+            }
+            block += 1;
+        }
+
+        self.texture_index_map = texture_index_map;
+        self.block_texture_map = block_texture_map;
+    }
+
+    pub fn get(&self, block: Block) -> &BlockDef {
+        self.blocks.get(block.kind() as usize).unwrap()
+    }
+
+    pub fn all_blocks(&self) -> &Vec<BlockDef> {
         &self.blocks
     }
 
@@ -734,7 +325,7 @@ impl BlockRegistry {
         &self.texture_index_map
     }
 
-    pub fn block_texture_map(&self) -> &HashMap<Block, [f32; 6]> {
+    pub fn block_texture_map(&self) -> &Vec<Option<[f32; 6]>> {
         &self.block_texture_map
     }
 

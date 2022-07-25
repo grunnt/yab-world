@@ -1,3 +1,4 @@
+use common::block::BlockRegistry;
 use common::chunk::*;
 use common::world_type::GeneratorType;
 use crossbeam::channel::*;
@@ -19,11 +20,15 @@ pub struct WorldGenerator {
 }
 
 impl WorldGenerator {
-    pub fn new(seed: u32, world_type: GeneratorType) -> WorldGenerator {
+    pub fn new(
+        seed: u32,
+        world_type: GeneratorType,
+        block_resistry: &BlockRegistry,
+    ) -> WorldGenerator {
         // let seed = 1234;
         let poi_object_list = {
             let mut result = Vec::new();
-            let mut gen = TowerGenerator::new(seed);
+            let mut gen = TowerGenerator::new(seed, block_resistry);
             for _ in 0..10 {
                 result.push(gen.generate());
             }
@@ -31,7 +36,7 @@ impl WorldGenerator {
         };
         let tree_object_list = {
             let mut result = Vec::new();
-            let mut gen = TreeGenerator::new(seed);
+            let mut gen = TreeGenerator::new(seed, block_resistry);
             for _ in 0..10 {
                 result.push(gen.generate());
             }
@@ -47,11 +52,16 @@ impl WorldGenerator {
             let column_tx = column_tx.clone();
             let poi_object_list = Arc::clone(&poi_object_list);
             let tree_object_list = Arc::clone(&tree_object_list);
+            let block_resistry = block_resistry.clone();
             thread::Builder::new()
                 .name(format!("generator{}", id).to_string())
                 .spawn(move || {
-                    let mut generator =
-                        ColumnGenerator::new(seed, poi_object_list, tree_object_list);
+                    let mut generator = ColumnGenerator::new(
+                        seed,
+                        poi_object_list,
+                        tree_object_list,
+                        &block_resistry,
+                    );
                     info!("Starting generator {}", id);
                     loop {
                         // Wait for a new column position (i.e. a generator request)

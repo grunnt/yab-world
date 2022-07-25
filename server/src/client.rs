@@ -3,6 +3,7 @@ use common::{chunk::*, player::PlayerData};
 use std::collections::HashSet;
 use std::time::Instant;
 
+// A single client connected to the server
 pub struct Client {
     pub player_id: u8,
     pub connection: CommChannel,

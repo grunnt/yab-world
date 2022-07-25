@@ -1,9 +1,11 @@
+use crate::physics::physics::Physics;
 use crate::{gui::Label, GameContext};
 use crate::{
     gui::{gui_renderer::GuiRenderer, ProgressBar},
     world::worldhandler::WorldHandler,
 };
 use crate::{in_game::InGameState, render::*};
+use common::block::BlockRegistry;
 use common::chunk::*;
 use common::comms::*;
 use common::world_type::GeneratorType;
@@ -157,7 +159,6 @@ impl State<GameContext> for StartGameState {
                             inventory,
                             gametime,
                             block_registry,
-                            resource_registry,
                         } => {
                             data.starting_position = Vec3::new(x, y, z);
                             data.starting_yaw = yaw;
@@ -166,7 +167,8 @@ impl State<GameContext> for StartGameState {
                             data.inventory = inventory;
                             data.daynight.set_time(gametime);
                             debug!("Client gametime {}", gametime);
-                            data.block_registry = serde_json::from_str(&block_registry).unwrap();
+                            let blocks = serde_json::from_str(&block_registry).unwrap();
+                            data.block_registry = BlockRegistry::from_blocks(blocks);
                             data.block_renderer = Some(
                                 BlockRenderer::new(
                                     &context.video().gl(),
@@ -175,8 +177,7 @@ impl State<GameContext> for StartGameState {
                                 )
                                 .unwrap(),
                             );
-                            data.resource_registry =
-                                serde_json::from_str(&resource_registry).unwrap();
+                            data.physics = Some(Physics::new(&data.block_registry));
                             // Request chunks for preloading
                             let starting_chunk_col = ChunkColumnPos::from_chunk_pos(
                                 ChunkPos::from_world_pos(data.starting_position),

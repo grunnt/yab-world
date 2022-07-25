@@ -27,6 +27,7 @@ pub struct WorldHandler {
     status_rx: Receiver<(ChunkColumnPos, ColumnStatus)>,
     block_registry: BlockRegistry,
     request_candidates: VecDeque<ChunkColumnPos>,
+    water_block: Block,
 }
 
 impl WorldHandler {
@@ -39,6 +40,8 @@ impl WorldHandler {
         let (column_tx, column_rx): (Sender<ChunkColumn>, Receiver<ChunkColumn>) = unbounded();
         let (vertices_tx, vertices_rx) = unbounded();
         let (status_tx, status_rx) = unbounded();
+
+        let water_block = block_registry.block_kind_from_code("wtr");
 
         let mut buffer = ChunkBuffer::new();
         let worldmesher = WorldMesher::new(block_registry.clone());
@@ -79,7 +82,18 @@ impl WorldHandler {
                             let mut chunks = Vec::new();
                             for z in 0..WORLD_HEIGHT_CHUNKS {
                                 let mut bytes_reader = Cursor::new(&block_data[z]);
-                                let blocks = Vec::rle_decode_from(&mut bytes_reader).unwrap();
+                                let mut blocks: Vec<Block> =
+                                    Vec::rle_decode_from(&mut bytes_reader).unwrap();
+                                // Set transparency and solidity bits
+                                for block in &mut blocks {
+                                    let block_def = block_registry_clone.get(block.kind());
+                                    if block_def.transparent && !block.is_transparent() {
+                                        block.toggle_transparency();
+                                    }
+                                    if block_def.solid && !block.is_solid() {
+                                        block.toggle_solidity();
+                                    }
+                                }
                                 let chunk = Chunk {
                                     pos: ChunkPos::new(col.x, col.y, z as i16),
                                     blocks,
@@ -207,6 +221,7 @@ impl WorldHandler {
             status_rx,
             block_registry,
             request_candidates: VecDeque::new(),
+            water_block,
         })
     }
 
@@ -386,7 +401,7 @@ impl WorldHandler {
                         (wcy - chunk.pos.y as f32 * CHUNK_SIZE as f32).floor() as usize,
                         (iz - chunk.pos.z as f32 * CHUNK_SIZE as f32).floor() as usize,
                     );
-                    if b.is_solid() || (hit_water && b.kind() == Block::water_block()) {
+                    if b.is_solid() || (hit_water && b.kind() == self.water_block) {
                         block = Some(b);
                     }
                 }

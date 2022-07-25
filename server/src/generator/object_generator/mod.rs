@@ -38,7 +38,7 @@ impl PregeneratedObject {
             foundation_block: None,
             place_on_soil: false,
             overwrite_non_empty: false,
-            blocks: vec![Block::empty_block(); size_x * size_y * size_z],
+            blocks: vec![AIR_BLOCK; size_x * size_y * size_z],
         }
     }
 

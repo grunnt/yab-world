@@ -11,7 +11,7 @@ use client::*;
 use common::world_definition::WorldList;
 use common::world_type::GeneratorType;
 use common::{block::BlockRegistry, comms::*};
-use common::{block::*, daynight::DayNight, resource::ResourceRegistry};
+use common::{block::*, daynight::DayNight};
 use common::{chunk::*, player::PlayerData};
 use crossbeam::channel::*;
 use crossbeam::unbounded;
@@ -21,6 +21,7 @@ use glm::Vec3;
 use log::*;
 use player_store::PlayerStore;
 use rand::Rng;
+use std::path::PathBuf;
 use std::thread::{sleep, Builder};
 use std::time::{Duration, Instant};
 
@@ -50,16 +51,17 @@ impl YabServer {
         let handle = Builder::new()
             .name("yab-world-server".to_string())
             .spawn(move || {
+                let data_path = PathBuf::from("data");
+                let block_registry = BlockRegistry::load_or_create(&data_path);
                 let world_list = WorldList::new();
                 let world_folder = world_list.get_world_path(seed);
-                let mut world = if world_folder.exists() {
-                    ServerWorldHandler::load(seed)
+                 let mut world = if world_folder.exists() {
+                    ServerWorldHandler::load(seed, &block_registry)
                 } else {
-                    ServerWorldHandler::new(seed, description.as_str(), world_type)
+                    ServerWorldHandler::new(seed, description.as_str(), world_type, &block_registry)
                 };
                 let mut player_store = PlayerStore::load(&world_folder);
-                let block_registry = BlockRegistry::new(&world_folder);
-                let resource_registry = ResourceRegistry::new(&world_folder);
+                let block_registry = BlockRegistry::load_or_create(&world_folder);
                 let mut clients = Vec::new();
                 let mut broadcast_to_all = Vec::new();
                 let mut loop_profile = Profile::new(1);
@@ -125,9 +127,10 @@ impl YabServer {
                                             &client.data.username,
                                         );
                                         // Give some starting resources 
-                                        client.data.inventory.add(0, 200);
-                                        client.data.inventory.add(1, 50);
-                                        client.data.inventory.add(2, 25);
+                                        // TODO fix
+                                        // client.data.inventory.add(0, 200);
+                                        // client.data.inventory.add(1, 50);
+                                        // client.data.inventory.add(2, 25);
                                         let spawn_range = CHUNK_SIZE as f32 * 0.25;
                                         client.data.x = REGION_SIZE_BLOCKS as f32 / 2.0 + rng.gen_range(-spawn_range, spawn_range);
                                         client.data.y = REGION_SIZE_BLOCKS as f32 / 2.0 + rng.gen_range(-spawn_range, spawn_range);
@@ -150,8 +153,7 @@ impl YabServer {
                                         pitch: client.data.pitch,
                                         inventory: client.data.inventory.clone(),
                                         gametime: daynight.get_time(),
-                                        block_registry: serde_json::to_string(&block_registry).unwrap(),
-                                        resource_registry: serde_json::to_string(&resource_registry).unwrap(),
+                                        block_registry: serde_json::to_string(&block_registry.all_blocks()).unwrap(),
                                     });
                                     broadcast_to_all.push(ServerMessage::PlayerSpawn {
                                         x: client.data.x,
@@ -236,16 +238,18 @@ impl YabServer {
                                     // Add or remove resources from inventory
                                     let mut allowed = true;
                                     let store_inventory = &mut player_store.get_mut_player(&client.data.username).unwrap().inventory;
-                                    if block.is_empty() {
+                                    if block.kind() == AIR_BLOCK_KIND {
+                                        // A block was removed
                                         let old_block = world.get_block(wbx, wby, wbz);
-                                        let block_def = block_registry.get(old_block);
-                                        for (resource_type, count) in &block_def.resource_yield {
+                                        let block_def = block_registry.get(old_block.kind());
+                                        for (resource_type, count) in &block_def.block_yield {
                                             client.data.inventory.add(*resource_type, *count);
                                             store_inventory.add(*resource_type, *count);
                                         }
                                     } else {
-                                        let block_def = block_registry.get(block);
-                                        for (resource_type, count) in &block_def.resource_yield {
+                                        // A block was placed
+                                        let block_def = block_registry.get(block.kind());
+                                        for (resource_type, count) in &block_def.block_yield {
                                             if client.data.inventory.count(*resource_type) < *count {
                                                 warn!(
                                                     "Player {} ({}) tried to build without sufficient resources",

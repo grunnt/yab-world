@@ -9,10 +9,17 @@ pub struct WaterWorldGenerator {
     soil_thickness: usize,
     water_z: usize,
     ocean_floor_noise: NoiseSource2D<Perlin>,
+    stone_block: Block,
+    sand_block: Block,
+    water_block: Block,
 }
 
 impl WaterWorldGenerator {
-    pub fn new(seed: u32) -> Self {
+    pub fn new(seed: u32, block_registry: &BlockRegistry) -> Self {
+        let stone_block = block_registry.block_kind_from_code("stn");
+        let sand_block = block_registry.block_kind_from_code("snd");
+        let water_block = block_registry.block_kind_from_code("wtr");
+
         let floor_min_z = 16;
         let floor_max_z = 64;
         WaterWorldGenerator {
@@ -23,6 +30,9 @@ impl WaterWorldGenerator {
                 floor_min_z as f64,
                 floor_max_z as f64,
             ),
+            stone_block,
+            sand_block,
+            water_block,
         }
     }
 
@@ -36,16 +46,14 @@ impl Generator for WaterWorldGenerator {
         let mut blocks = Vec::new();
         for z in 0..WORLD_HEIGHT_CHUNKS * CHUNK_SIZE {
             let floor_z = self.get_ocean_floor_z(x, y);
-            let block = if z <= 2 {
-                Block::bedrock_block()
-            } else if z < floor_z {
-                Block::rock_block()
+            let block = if z <= floor_z {
+                self.stone_block
             } else if z < floor_z + self.soil_thickness {
-                Block::sand_block()
+                self.sand_block
             } else if z < 128 {
-                Block::water_block()
+                self.water_block
             } else {
-                Block::empty_block()
+                AIR_BLOCK
             };
             blocks.push(block);
         }

@@ -210,11 +210,12 @@ impl GuiRenderer {
             }
             self.frame_meshes[l].clear();
         }
-        self.text.draw(self.ui_camera.get_projection());
 
         self.sprite_batcher_mut().draw(&projection);
 
         self.primitive_render.draw(&projection);
+
+        self.text.draw(self.ui_camera.get_projection());
     }
 }
 

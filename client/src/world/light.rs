@@ -140,7 +140,7 @@ impl LightHandler for ChunkBuffer {
     ) {
         let mut queue = VecDeque::new();
         let mut propagate_queue = Vec::new();
-        let mut empty_block = Block::empty_block();
+        let mut empty_block = AIR_BLOCK;
         empty_block.set_light(light_level);
         self.set_block(wbx, wby, wbz, empty_block);
         // First enqueue neighbours

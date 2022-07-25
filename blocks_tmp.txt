@@ -1,0 +1,438 @@
+    
+        blocks.insert(
+            SANDSTONE_BLOCK,
+            BlockDef {
+                name: "Sandstone",
+                color: ColorRGBu8::new(173, 162, 126),
+                textures: vec![
+                    "sandstone",
+                    "sandstone",
+                    "sandstone",
+                    "sandstone",
+                    "sandstone_top",
+                    "sandstone_bottom",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(SANDSTONE_BLOCK, 1)],
+                block_cost: vec![(SANDSTONE_BLOCK, 1)],
+            },
+        );
+        blocks.insert(
+            WOOD_BLOCK,
+            BlockDef {
+                name: "Wood",
+                color: ColorRGBu8::new(106, 82, 48),
+                textures: vec![
+                    "oak_planks",
+                    "oak_planks",
+                    "oak_planks",
+                    "oak_planks",
+                    "oak_planks",
+                    "oak_planks",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(WOOD_BLOCK, 1)],
+                block_cost: vec![(WOOD_BLOCK, 1)],
+            },
+        );
+        blocks.insert(
+            LOG_BLOCK,
+            BlockDef {
+                name: "Log",
+                color: ColorRGBu8::new(106, 82, 48),
+                textures: vec![
+                    "oak_log",
+                    "oak_log",
+                    "oak_log",
+                    "oak_log",
+                    "oak_log_top",
+                    "oak_log_top",
+                ],
+                light: 0,
+                buildable: false,
+                block_yield: vec![(WOOD_BLOCK, 2)],
+                block_cost: vec![],
+            },
+        );
+        blocks.insert(
+            BEDROCK_BLOCK,
+            BlockDef {
+                name: "Bedrock",
+                color: ColorRGBu8::new(25, 15, 20),
+                textures: vec![
+                    "bedrock",
+                    "bedrock",
+                    "bedrock",
+                    "bedrock",
+                    "bedrock",
+                    "bedrock",
+                ],
+                light: 0,
+                buildable: false,
+                block_yield: vec![],
+                block_cost: vec![],
+            },
+        );
+        blocks.insert(
+            LAMP_BLOCK,
+            BlockDef {
+                name: "Lamp",
+                color: ColorRGBu8::new(255, 255, 255),
+                textures: vec![
+                    "lamp",
+                    "lamp",
+                    "lamp",
+                    "lamp",
+                    "lamp",
+                    "lamp",
+                ],
+                light: 15,
+                buildable: true,
+                block_yield: vec![(LAMP_BLOCK, 1)],
+                block_cost: vec![(IRON_BLOCK, 2)],
+            },
+        );
+        blocks.insert(
+            IRON_BLOCK,
+            BlockDef {
+                name: "Iron",
+                color: ColorRGBu8::new(250, 220, 25),
+                textures: vec![
+                    "ore_iron",
+                    "ore_iron",
+                    "ore_iron",
+                    "ore_iron",
+                    "ore_iron",
+                    "ore_iron",
+                ],
+                light: 0,
+                buildable: false,
+                block_yield: vec![(IRON_BLOCK, 1)],
+                block_cost: vec![],
+            },
+        );
+        blocks.insert(
+            GOLD_BLOCK,
+            BlockDef {
+                name: "Gold",
+                color: ColorRGBu8::new(250, 220, 25),
+                textures: vec![
+                    "ore_gold",
+                    "ore_gold",
+                    "ore_gold",
+                    "ore_gold",
+                    "ore_gold",
+                    "ore_gold",
+                ],
+                light: 0,
+                buildable: false,
+                block_yield: vec![(GOLD_BLOCK, 1)],
+                block_cost: vec![],
+            },
+        );
+        blocks.insert(
+            ICE_BLOCK,
+            BlockDef {
+                name: "Ice",
+                color: ColorRGBu8::new(250, 220, 25),
+                textures: vec![
+                    "ice",
+                    "ice",
+                    "ice",
+                    "ice",
+                    "ice",
+                    "ice",
+                ],
+                light: 0,
+                buildable: false,
+                block_yield: vec![],
+                block_cost: vec![],
+            },
+        );
+        blocks.insert(
+            BRICKS_BLOCK,
+            BlockDef {
+                name: "Stone bricks",
+                color: ColorRGBu8::new(218, 224, 224),
+                textures: vec![
+                    "stone_bricks",
+                    "stone_bricks",
+                    "stone_bricks",
+                    "stone_bricks",
+                    "stone_bricks",
+                    "stone_bricks",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(BRICKS_BLOCK, 1)],
+                block_cost: vec![(ROCK_BLOCK, 2)],
+            },
+        );
+        let mut index = BRICKS_BLOCK + 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Small Lamp",
+                color: ColorRGBu8::new(255, 255, 255),
+                textures: vec![
+                    "small_lamp",
+                    "small_lamp",
+                    "small_lamp",
+                    "small_lamp",
+                    "small_lamp",
+                    "small_lamp",
+                ],
+                light: 10,
+                buildable: true,
+                block_yield: vec![(1, 1)],
+                block_cost: vec![(1, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "White concrete",
+                color: ColorRGBu8::new(218, 224, 224),
+                textures: vec![
+                    "white_concrete",
+                    "white_concrete",
+                    "white_concrete",
+                    "white_concrete",
+                    "white_concrete",
+                    "white_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Gray concrete",
+                color: ColorRGBu8::new(152, 152, 144),
+                textures: vec![
+                    "gray_concrete",
+                    "gray_concrete",
+                    "gray_concrete",
+                    "gray_concrete",
+                    "gray_concrete",
+                    "gray_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Black concrete",
+                textures: vec![
+                    "black_concrete",
+                    "black_concrete",
+                    "black_concrete",
+                    "black_concrete",
+                    "black_concrete",
+                    "black_concrete",
+                ],
+                color: ColorRGBu8::new(5, 5, 5),
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Red concrete",
+                color: ColorRGBu8::new(166, 62, 61),
+                textures: vec![
+                    "red_concrete",
+                    "red_concrete",
+                    "red_concrete",
+                    "red_concrete",
+                    "red_concrete",
+                    "red_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Brown concrete",
+                color: ColorRGBu8::new(127, 92, 60),
+                textures: vec![
+                    "brown_concrete",
+                    "brown_concrete",
+                    "brown_concrete",
+                    "brown_concrete",
+                    "brown_concrete",
+                    "brown_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Orange concrete",
+                color: ColorRGBu8::new(233, 128, 3),
+                textures: vec![
+                    "orange_concrete",
+                    "orange_concrete",
+                    "orange_concrete",
+                    "orange_concrete",
+                    "orange_concrete",
+                    "orange_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Yellow concrete",
+                color: ColorRGBu8::new(245, 193, 45),
+                textures: vec![
+                    "yellow_concrete",
+                    "yellow_concrete",
+                    "yellow_concrete",
+                    "yellow_concrete",
+                    "yellow_concrete",
+                    "yellow_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Green concrete",
+                color: ColorRGBu8::new(126, 189, 49),
+                textures: vec![
+                    "green_concrete",
+                    "green_concrete",
+                    "green_concrete",
+                    "green_concrete",
+                    "green_concrete",
+                    "green_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Cyan concrete",
+                color: ColorRGBu8::new(45, 147, 162),
+                textures: vec![
+                    "cyan_concrete",
+                    "cyan_concrete",
+                    "cyan_concrete",
+                    "cyan_concrete",
+                    "cyan_concrete",
+                    "cyan_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Blue concrete",
+                color: ColorRGBu8::new(66, 162, 212),
+                textures: vec![
+                    "blue_concrete",
+                    "blue_concrete",
+                    "blue_concrete",
+                    "blue_concrete",
+                    "blue_concrete",
+                    "blue_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Purple concrete",
+                color: ColorRGBu8::new(129, 60, 177),
+                textures: vec![
+                    "purple_concrete",
+                    "purple_concrete",
+                    "purple_concrete",
+                    "purple_concrete",
+                    "purple_concrete",
+                    "purple_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+        index += 1;
+        blocks.insert(
+            index,
+            BlockDef {
+                name: "Pink concrete",
+                color: ColorRGBu8::new(225, 131, 168),
+                textures: vec![
+                    "pink_concrete",
+                    "pink_concrete",
+                    "pink_concrete",
+                    "pink_concrete",
+                    "pink_concrete",
+                    "pink_concrete",
+                ],
+                light: 0,
+                buildable: true,
+                block_yield: vec![(0, 1)],
+                block_cost: vec![(0, 1)],
+            },
+        );
+
+        let mut registry = BlockRegistry {
+            blocks,
+            texture_index_map: HashMap::new(),
+            block_texture_map: HashMap::new(),
+        };

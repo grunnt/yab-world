@@ -31,7 +31,6 @@ pub struct InGameState {
     changed_chunks_to_mesh: HashSet<ChunkPos>,
     out_of_range_columns: HashSet<ChunkColumnPos>,
     gui: Gui<GuiRenderer>,
-    resource_label: WidgetId,
     selected_label: WidgetId,
     position_label: WidgetId,
     block_place_timer: f32,
@@ -82,13 +81,6 @@ impl InGameState {
             Box::new(Label::new("".to_string())),
             CellAlignment::BottomLeft,
         );
-        let resource_label = gui.place(
-            gui.root_id(),
-            2,
-            3,
-            Box::new(Label::new("".to_string())),
-            CellAlignment::BottomRight,
-        );
 
         InGameState {
             buffer_col,
@@ -102,7 +94,6 @@ impl InGameState {
             changed_chunks_to_mesh: HashSet::new(),
             out_of_range_columns: HashSet::new(),
             gui,
-            resource_label,
             selected_label,
             position_label,
             block_remove_timer: 0.0,
@@ -138,7 +129,7 @@ impl InGameState {
             InputEvent::KeyPress { key, shift } => match key {
                 Key::Space => {
                     // -------- Normal jumps --------
-                    let object = data.physics.get_object_mut(self.player_body);
+                    let object = data.physics_mut().get_object_mut(self.player_body);
                     if object.on_ground && !self.player_flying {
                         object.velocity.z = object.velocity.z.max(MIN_JUMP_VELOCITY);
                         context.audio_mut().play_sound("jump");
@@ -167,7 +158,7 @@ impl InGameState {
                 Key::F => {
                     if *shift {
                         self.player_flying = !self.player_flying;
-                        data.physics
+                        data.physics_mut()
                             .set_object_colliding(self.player_body, !self.player_flying);
                         debug!("Player flying: {}", self.player_flying);
                     }
@@ -179,14 +170,6 @@ impl InGameState {
                     context.input_mut().set_mouse_captured(false);
                     return StateCommand::CloseState;
                 }
-                Key::Num1 => self.set_selected_block(data, Block::dirt_block()),
-                Key::Num2 => self.set_selected_block(data, Block::grass_block()),
-                Key::Num3 => self.set_selected_block(data, Block::rock_block()),
-                Key::Num4 => self.set_selected_block(data, Block::sand_block()),
-                Key::Num5 => self.set_selected_block(data, Block::sandstone_block()),
-                Key::Num6 => self.set_selected_block(data, Block::wood_block()),
-                Key::Num7 => self.set_selected_block(data, Block::lamp_block()),
-                // Key::Num8 => self.set_selected_block(data, Block::water_block()),
                 Key::G => self.gui_visible = !self.gui_visible,
                 _ => (),
             },
@@ -195,21 +178,10 @@ impl InGameState {
         StateCommand::None
     }
 
-    fn update_resource_label(&mut self, data: &mut GameContext) {
-        let mut new_text = String::new();
-        for (resource, resource_def) in data.resource_registry.resources() {
-            let count = data.inventory.count(*resource);
-            new_text += format!("{} {} ", resource_def.name, count).as_str();
-        }
-        self.gui
-            .set_value(&self.resource_label, GuiValue::String(new_text));
-        self.set_selected_block(data, data.selected_block);
-    }
-
     fn set_selected_block(&mut self, data: &mut GameContext, selected: Block) {
-        data.selected_block = selected;
+        data.selected_block = selected.kind();
         let mut block_count = 999;
-        for (resource, count) in &data.block_registry.get(data.selected_block).resource_cost {
+        for (resource, count) in &data.block_registry.get(data.selected_block).block_cost {
             let inv_count = data.inventory.count(*resource);
             let max_blocks = if *count > 0 { inv_count / count } else { 0 };
             if max_blocks < block_count {
@@ -256,7 +228,7 @@ impl InGameState {
                             let selected_block = data.selected_block;
                             let block_def = data.block_registry.get(selected_block);
                             let mut sufficient = true;
-                            for (resource_type, count) in &block_def.resource_yield {
+                            for (resource_type, count) in &block_def.block_yield {
                                 if data.inventory.count(*resource_type) < *count {
                                     sufficient = false;
                                     break;
@@ -264,16 +236,16 @@ impl InGameState {
                             }
                             if sufficient {
                                 // Remove resources from inventory
-                                for (resource_type, count) in &block_def.resource_yield {
+                                for (resource_type, count) in &block_def.block_yield {
                                     data.inventory.remove(*resource_type, *count);
                                 }
-                                self.update_resource_label(data);
                                 // Place block
+                                let block = data.block_registry.set_block_flags(selected_block);
                                 data.world_mut().set_block_add_dirty(
                                     wbx,
                                     wby,
                                     wbz,
-                                    selected_block,
+                                    block,
                                     &mut self.changed_chunks_to_mesh,
                                 );
                                 // Send change to the server
@@ -319,32 +291,31 @@ impl InGameState {
                 self.block_remove_timer += delta;
                 if self.block_remove_timer > BLOCK_REMOVE_TIME_S {
                     // See if we need to remove a block
-
                     let (wbx, wby, wbz) = (
                         (hit.hit_block_pos.x).floor() as i16,
                         (hit.hit_block_pos.y).floor() as i16,
                         (hit.hit_block_pos.z).floor() as i16,
                     );
                     let block = data.world().chunks.get_block(wbx, wby, wbz);
-                    data.dig_effect(
-                        Vec3::new(wbx as f32 + 0.5, wby as f32 + 0.5, wbz as f32 + 0.5),
-                        block.kind(),
-                    );
+                    data.dig_effect(Vec3::new(
+                        wbx as f32 + 0.5,
+                        wby as f32 + 0.5,
+                        wbz as f32 + 0.5,
+                    ));
                     if data.world().chunks.are_all_neighbours_stored(
                         ChunkColumnPos::from_world_block_coords(wbx, wby),
                     ) {
                         // Add resources in block to inventory
                         let block_def = data.block_registry.get(block.kind());
-                        for (resource_type, count) in &block_def.resource_yield {
+                        for (resource_type, count) in &block_def.block_yield {
                             data.inventory.add(*resource_type, *count);
                         }
-                        self.update_resource_label(data);
                         // Clear the block
                         data.world_mut().set_block_add_dirty(
                             wbx,
                             wby,
                             wbz,
-                            Block::empty_block(),
+                            AIR_BLOCK,
                             &mut self.changed_chunks_to_mesh,
                         );
                         // Send change to the server
@@ -353,7 +324,7 @@ impl InGameState {
                                 wbx,
                                 wby,
                                 wbz,
-                                block: Block::empty_block(),
+                                block: AIR_BLOCK,
                             })
                             .unwrap();
                     }
@@ -382,8 +353,7 @@ impl InGameState {
 impl State<GameContext> for InGameState {
     fn initialize(&mut self, data: &mut GameContext, context: &mut SystemContext) {
         debug!("Activating {}", self.type_name());
-        self.update_resource_label(data);
-        self.set_selected_block(data, Block::sand_block());
+        self.set_selected_block(data, 2);
 
         // ----------------------------------
         // Game world
@@ -399,10 +369,11 @@ impl State<GameContext> for InGameState {
         );
 
         data.last_position = data.starting_position;
-        self.player_body = data.physics.new_object(
-            data.starting_position.x,
-            data.starting_position.y,
-            data.starting_position.z,
+        let position = data.starting_position.clone();
+        self.player_body = data.physics_mut().new_object(
+            position.x,
+            position.y,
+            position.z,
             Vec3::new(0.6, 0.6, 1.5),
         );
 
@@ -440,34 +411,20 @@ impl State<GameContext> for InGameState {
 
         self.rendering_mut().camera.update();
 
+        // Generate spash sound if going into or out of water
         let player_handle = self.player_body;
-
-        let player_pos =
-            data.physics.get_object_position(player_handle) + Vec3::new(0.0, 0.0, CAMERA_Z_OFFSET);
-        self.in_water = data
-            .world()
-            .chunks
-            .get_block(
-                player_pos.x as i16,
-                player_pos.y as i16,
-                player_pos.z as i16,
-            )
-            .kind()
-            == Block::water_block();
-        if self.in_water && !data.was_in_water {
+        let player_object = data.physics().get_object(player_handle);
+        if player_object.in_water != player_object.was_in_water {
             context.audio_mut().play_sound("splash");
-            data.was_in_water = true;
-        } else if !self.in_water && data.was_in_water {
-            context.audio_mut().play_sound("splash");
-            data.was_in_water = false;
         }
+
         data.daynight.update(delta);
 
         let camera = self.rendering().camera().clone();
         let camera_direction = camera.get_direction().clone();
         let frustum = self.rendering().camera().frustum_checker();
 
-        data.physics
+        data.physics_mut()
             .set_object_facing(player_handle, &camera_direction);
         let controls = PhysicsObjectControls {
             left: context.input().key_pressed(Key::A),
@@ -481,7 +438,7 @@ impl State<GameContext> for InGameState {
         let on_ground = if self.player_flying {
             false
         } else {
-            data.physics.get_object_mut(player_handle).on_ground
+            data.physics_mut().get_object_mut(player_handle).on_ground
         };
         if controls.is_moving() && on_ground {
             if camera.position.metric_distance(&data.last_sound_position) > 2.0 {
@@ -489,7 +446,8 @@ impl State<GameContext> for InGameState {
                 data.last_sound_position = camera.position;
             }
         }
-        data.physics.set_object_controls(player_handle, controls);
+        data.physics_mut()
+            .set_object_controls(player_handle, controls);
 
         // -------- Networking --------
         // Do we need to send a position update to the server?
@@ -550,6 +508,7 @@ impl State<GameContext> for InGameState {
                     wbz,
                     block,
                 } => {
+                    let block = data.block_registry.set_block_flags(block);
                     data.world_mut().set_block_add_dirty(
                         wbx,
                         wby,
@@ -656,7 +615,7 @@ impl State<GameContext> for InGameState {
             self.delta_accumulator -= PHYSICS_TIME_STEP;
         }
 
-        let pos = data.physics.get_object_position(self.player_body).clone();
+        let pos = data.physics().get_object_position(self.player_body).clone();
         self.rendering_mut().camera.position.x = pos.x;
         self.rendering_mut().camera.position.y = pos.y;
         self.rendering_mut().camera.position.z = pos.z + CAMERA_Z_OFFSET;

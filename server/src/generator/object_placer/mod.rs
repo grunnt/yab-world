@@ -167,9 +167,9 @@ impl ObjectPlacer {
 
         // Now place the object
         let bottom_block = pregenerated.get(x_rel, y_rel, 0);
-        let place_foundation = bottom_block != Block::empty_block() && bottom_block != IGNORE_BLOCK;
+        let place_foundation = bottom_block != AIR_BLOCK_KIND && bottom_block != IGNORE_BLOCK;
         for z in from_z..z2 {
-            if pregenerated.overwrite_non_empty || blocks[z] == AIR_BLOCK {
+            if pregenerated.overwrite_non_empty || blocks[z] == AIR_BLOCK_KIND {
                 if z < z1 {
                     if place_foundation {
                         if let Some(foundation_block) = pregenerated.foundation_block {
@@ -188,7 +188,7 @@ impl ObjectPlacer {
         if pregenerated.overwrite_non_empty {
             // Clear any blocks above the object
             for z in z2..WORLD_HEIGHT_BLOCKS as usize {
-                blocks[z] = Block::empty_block();
+                blocks[z] = AIR_BLOCK;
             }
         }
     }
