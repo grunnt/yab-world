@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use gamework::gl;
+use gamework::glow;
 use gamework::video::*;
 use std::time::Instant;
 
@@ -37,32 +37,31 @@ impl BlockVertex {
 }
 
 pub struct BlockMesh {
-    pub vbo: ArrayBuffer,
-    pub vao: VertexArray,
-    pub vertex_count: gl::types::GLsizei,
+    pub vbo: VBO,
+    pub vao: VAO,
+    pub vertex_count: i32,
     pub creation_instant: Instant,
     pub animate: bool,
 }
 
 impl BlockMesh {
     pub fn new(
-        gl: &gl::Gl,
+        gl: &glow::Context,
         vertices: &Vec<BlockVertex>,
-        fence: bool,
         animate: bool,
     ) -> Option<BlockMesh> {
         if vertices.len() == 0 {
             None
         } else {
             // Vertex array
-            let mut vbo = ArrayBuffer::new(gl);
+            let vbo = VBO::new(gl);
 
             // Vertex array object
-            let vao = VertexArray::new(gl);
+            let vao = VAO::new(gl);
 
-            vao.bind();
-            vbo.bind();
-            vbo.static_draw_data(vertices, fence);
+            vao.bind(gl);
+            vbo.bind(gl);
+            vbo.static_draw_data(gl, vertices);
             BlockVertex::vertex_attrib_pointers(gl);
 
             let creation_instant = Instant::now();
@@ -70,26 +69,24 @@ impl BlockMesh {
             Some(BlockMesh {
                 vbo,
                 vao,
-                vertex_count: vertices.len() as gl::types::GLsizei,
+                vertex_count: vertices.len() as i32,
                 creation_instant,
                 animate,
             })
         }
     }
 
-    pub fn render(&mut self, gl: &gl::Gl) {
-        if self.vbo.passed_fence() {
-            self.vao.bind();
-            unsafe {
-                gl.DrawArrays(gl::TRIANGLES, 0, self.vertex_count);
-            }
+    pub fn render(&mut self, gl: &glow::Context) {
+        self.vao.bind(gl);
+        unsafe {
+            gl.draw_arrays(glow::TRIANGLES, 0, self.vertex_count);
         }
     }
 
-    pub fn render_lines(&self, gl: &gl::Gl) {
-        self.vao.bind();
+    pub fn render_lines(&self, gl: &glow::Context) {
+        self.vao.bind(gl);
         unsafe {
-            gl.DrawArrays(gl::LINES, 0, self.vertex_count);
+            gl.draw_arrays(glow::LINES, 0, self.vertex_count);
         }
     }
 }

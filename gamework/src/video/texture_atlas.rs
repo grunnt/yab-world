@@ -1,5 +1,5 @@
 use super::*;
-use crate::video::texture::Texture;
+use crate::video::texture::MyTexture;
 use image::{DynamicImage, GenericImageView, GrayImage};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -12,20 +12,20 @@ use texture_packer::{
 };
 
 pub struct TextureAtlas {
-    texture: Texture,
+    texture: MyTexture,
     frames: Vec<TextureFrame>,
     name_id_map: HashMap<String, usize>,
 }
 
 impl TextureAtlas {
     /// Load a directory as a texture atlas
-    pub fn load_directory(source_directory: &Path, gl: &gl::Gl) -> TextureAtlas {
+    pub fn load_directory(source_directory: &Path, gl: &glow::Context) -> TextureAtlas {
         // Pack the directory
         let packer = pack_directory(source_directory);
 
         // Store in a texture
         let image = ImageExporter::export(&packer).unwrap();
-        let texture = Texture::from_image(
+        let texture = MyTexture::from_image(
             gl,
             &image,
             TextureFormat::RGBA8,
@@ -57,9 +57,9 @@ impl TextureAtlas {
     }
 
     /// Load a texture atlas
-    pub fn load(png_path: &Path, json_path: &Path, gl: &gl::Gl) -> TextureAtlas {
+    pub fn load(png_path: &Path, json_path: &Path, gl: &glow::Context) -> TextureAtlas {
         // Load atlas texture
-        let texture = Texture::load(
+        let texture = MyTexture::load(
             png_path,
             gl,
             TextureFormat::RGBA8,
@@ -87,7 +87,7 @@ impl TextureAtlas {
     pub fn from_array(
         textures: Vec<(String, u32, u32, Vec<u8>)>,
         format: TextureFormat,
-        gl: &gl::Gl,
+        gl: &glow::Context,
     ) -> TextureAtlas {
         let config = TexturePackerConfig {
             max_width: 1024,
@@ -112,7 +112,7 @@ impl TextureAtlas {
         let image = ImageExporter::export(&packer).unwrap();
         let image = DynamicImage::ImageLuma8(image.to_luma());
 
-        let texture = Texture::from_image(
+        let texture = MyTexture::from_image(
             gl,
             &image,
             format,
@@ -144,7 +144,7 @@ impl TextureAtlas {
     }
 
     /// Get a reference to the underlying texture of this atlas
-    pub fn texture(&self) -> &Texture {
+    pub fn texture(&self) -> &MyTexture {
         &self.texture
     }
 

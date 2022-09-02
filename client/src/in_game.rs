@@ -1,15 +1,10 @@
-use crate::{
-    block_select::BlockSelectState,
-    gui::{gui_renderer::GuiRenderer, Label},
-    *,
-};
+use crate::{block_select::BlockSelectState, *};
 use common::block::*;
 use common::inventory::Inventory;
 use common::{chunk::*, player::PlayerData};
 use floating_duration::TimeAsFloat;
 use gamework::{InputEvent, MouseButton};
 use gamework::{Key, StateCommand};
-use gui::ProfileChart;
 use log::*;
 
 const POS_UPDATE_INTERVAL: f64 = 1.0 / 20.0;
@@ -30,12 +25,8 @@ pub struct InGameState {
     rendering: Option<Rendering>,
     changed_chunks_to_mesh: HashSet<ChunkPos>,
     out_of_range_columns: HashSet<ChunkColumnPos>,
-    gui: Gui<GuiRenderer>,
-    selected_label: WidgetId,
-    position_label: WidgetId,
     block_place_timer: f32,
     block_remove_timer: f32,
-    profile_chart_id: WidgetId,
     gui_visible: bool,
 }
 
@@ -45,42 +36,6 @@ impl InGameState {
         let open_column_requests: usize = 0;
         let debug_info = false;
         let player_flying = false;
-        let mut gui = Gui::new(
-            vec![
-                fixed_col(10.0),
-                flex_col(1.0),
-                flex_col(1.0),
-                fixed_col(10.0),
-            ],
-            vec![
-                fixed_row(10.0),
-                fixed_row(40.0),
-                flex_row(1.0),
-                fixed_row(40.0),
-                fixed_row(10.0),
-            ],
-        );
-        let position_label = gui.place(
-            gui.root_id(),
-            1,
-            1,
-            Box::new(Label::new("".to_string())),
-            CellAlignment::TopLeft,
-        );
-        let profile_chart_id = gui.place(
-            gui.root_id(),
-            2,
-            1,
-            Box::new(ProfileChart::new(75.0)),
-            CellAlignment::TopRight,
-        );
-        let selected_label = gui.place(
-            gui.root_id(),
-            1,
-            3,
-            Box::new(Label::new("".to_string())),
-            CellAlignment::BottomLeft,
-        );
 
         InGameState {
             buffer_col,
@@ -93,12 +48,8 @@ impl InGameState {
             rendering: None,
             changed_chunks_to_mesh: HashSet::new(),
             out_of_range_columns: HashSet::new(),
-            gui,
-            selected_label,
-            position_label,
             block_remove_timer: 0.0,
             block_place_timer: 0.0,
-            profile_chart_id,
             gui_visible: true,
         }
     }
@@ -131,7 +82,7 @@ impl InGameState {
                     let object = data.physics_mut().get_object_mut(self.player_body);
                     if object.on_ground && !self.player_flying {
                         object.velocity.z = object.velocity.z.max(MIN_JUMP_VELOCITY);
-                        context.audio_mut().play_sound("jump");
+                        // context.audio_mut().play_sound("jump");
                     }
                 }
                 Key::Tab => {
@@ -230,7 +181,7 @@ impl InGameState {
                                         block: selected_block,
                                     })
                                     .unwrap();
-                                context.audio_mut().play_sound("build");
+                                // context.audio_mut().play_sound("build");
                             } else {
                                 debug!(
                                     "Insufficient resources to place block {:?}",
@@ -299,7 +250,7 @@ impl InGameState {
                             .unwrap();
                     }
                     self.block_remove_timer -= BLOCK_REMOVE_TIME_S;
-                    context.audio_mut().play_sound("build");
+                    // context.audio_mut().play_sound("build");
                 }
             }
         } else {
@@ -309,14 +260,6 @@ impl InGameState {
             .emitter_mut(dig_beam_emitter_handle)
             .unwrap()
             .active = dig_beam_active;
-    }
-
-    fn profile_chart(&mut self) -> &mut ProfileChart {
-        self.gui
-            .get_widget_mut(&self.profile_chart_id)
-            .as_any_mut()
-            .downcast_mut::<ProfileChart>()
-            .unwrap()
     }
 }
 
@@ -358,26 +301,20 @@ impl State<GameContext> for InGameState {
         &mut self,
         delta: f32,
         data: &mut GameContext,
+        gui: &egui::Context,
         input_events: &Vec<InputEvent>,
         context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
-        context.fill_profile_buffer(self.profile_chart().buffer_mut());
+        // context.fill_profile_buffer(self.profile_chart().buffer_mut());
 
         // Update selected block label
-        let block_count = data.inventory.count(data.selected_block.kind());
-        let text = format!(
-            "{} ({})",
-            data.block_registry.get(data.selected_block).name,
-            block_count
-        );
-        self.gui
-            .set_value(&self.selected_label, GuiValue::String(text));
+        // let block_count = data.inventory.count(data.selected_block.kind());
+        // let text = format!(
+        //     "{} ({})",
+        //     data.block_registry.get(data.selected_block).name,
+        //     block_count
+        // );
 
-        self.gui.update(
-            input_events,
-            context.video().screen_size(),
-            data.gui_renderer_mut(),
-        );
         for event in input_events {
             let state_command = self.handle_event(event, data, context);
             match state_command {
@@ -395,7 +332,7 @@ impl State<GameContext> for InGameState {
         let player_handle = self.player_body;
         let player_object = data.physics().get_object(player_handle);
         if player_object.in_water != player_object.was_in_water {
-            context.audio_mut().play_sound("splash");
+            // context.audio_mut().play_sound("splash");
         }
 
         data.daynight.update(delta);
@@ -422,7 +359,7 @@ impl State<GameContext> for InGameState {
         };
         if controls.is_moving() && on_ground {
             if camera.position.metric_distance(&data.last_sound_position) > 2.0 {
-                context.audio_mut().play_sound("step");
+                // context.audio_mut().play_sound("step");
                 data.last_sound_position = camera.position;
             }
         }
@@ -450,17 +387,17 @@ impl State<GameContext> for InGameState {
 
         // Show camera position
         let cam_cp = ChunkPos::from_world_pos(camera.position);
-        let text = format!(
-            "Position {},{},{} / Chunk {},{},{}",
-            camera.position.x as i16,
-            camera.position.y as i16,
-            camera.position.z as i16,
-            cam_cp.x,
-            cam_cp.y,
-            cam_cp.z
-        );
-        self.gui
-            .set_value(&self.position_label, GuiValue::String(text));
+        // let text = format!(
+        //     "Position {},{},{} / Chunk {},{},{}",
+        //     camera.position.x as i16,
+        //     camera.position.y as i16,
+        //     camera.position.z as i16,
+        //     cam_cp.x,
+        //     cam_cp.y,
+        //     cam_cp.z
+        // );
+        // self.gui
+        //     .set_value(&self.position_label, GuiValue::String(text));
 
         // Check if the camera moved a chunk
         let cam_chunk_col = ChunkColumnPos::from_chunk_pos(cam_cp);
@@ -605,15 +542,13 @@ impl State<GameContext> for InGameState {
         // Receive new meshes from mesher thread
         if let Some((cp, vertices, translucent_vertices)) = data.world_mut().try_receive_vertices()
         {
-            if let Some(mesh) = BlockMesh::new(&self.rendering().gl, &vertices, false, true) {
+            if let Some(mesh) = BlockMesh::new(context.video().gl(), &vertices, true) {
                 if data.block_renderer().meshes.contains_key(&cp) {
                     warn!("Duplicate mesh for {:?}", cp);
                 }
                 data.block_renderer_mut().insert_mesh_pos(cp, mesh);
             }
-            if let Some(mesh) =
-                BlockMesh::new(&self.rendering().gl, &translucent_vertices, false, true)
-            {
+            if let Some(mesh) = BlockMesh::new(context.video().gl(), &translucent_vertices, true) {
                 if data.block_renderer().translucent_meshes.contains_key(&cp) {
                     warn!("Duplicate mesh for {:?}", cp);
                 }
@@ -633,13 +568,13 @@ impl State<GameContext> for InGameState {
                     .rendering()
                     .world_mesher
                     .mesh_chunk(cp, &data.world().chunks);
-                if let Some(mesh) = BlockMesh::new(&self.rendering().gl, &vertices, false, false) {
+                if let Some(mesh) = BlockMesh::new(context.video().gl(), &vertices, false) {
                     data.block_renderer_mut().insert_mesh_pos(cp, mesh);
                 } else {
                     data.block_renderer_mut().remove_mesh_pos(cp);
                 }
                 if let Some(mesh) =
-                    BlockMesh::new(&self.rendering().gl, &translucent_vertices, false, false)
+                    BlockMesh::new(context.video().gl(), &translucent_vertices, false)
                 {
                     data.block_renderer_mut()
                         .insert_translucent_mesh_pos(cp, mesh);
@@ -656,7 +591,7 @@ impl State<GameContext> for InGameState {
         );
         data.particles.as_mut().unwrap().update(delta);
 
-        self.profile_chart().update(context);
+        // self.profile_chart().update(context);
 
         StateCommand::None
     }
@@ -666,8 +601,6 @@ impl State<GameContext> for InGameState {
         self.rendering_mut()
             .camera
             .set_aspect(context.video().aspect_ratio());
-        data.gui_renderer_mut()
-            .resize(context.video().screen_size());
     }
 
     fn render(&mut self, game_context: &mut GameContext, context: &mut SystemContext) {
@@ -677,16 +610,13 @@ impl State<GameContext> for InGameState {
             .render(game_context, context, in_water, &mut out_of_range);
 
         game_context.particles.as_mut().unwrap().draw(
+            context.video().gl(),
             self.rendering().camera.get_view(),
             self.rendering().camera.get_projection(),
             context.video().height() as f32,
         );
 
         self.out_of_range_columns.extend(out_of_range);
-        if self.gui_visible {
-            self.gui.paint(game_context.gui_renderer_mut());
-            game_context.gui_renderer_mut().render();
-        }
     }
 
     fn shutdown(&mut self) {}

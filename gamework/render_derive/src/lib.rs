@@ -22,9 +22,9 @@ fn generate_impl(ast: &syn::DeriveInput) -> quote::Tokens {
     quote! {
         impl #ident #generics #where_clause {
             #[allow(unused_variables)]
-            pub fn vertex_attrib_pointers(gl: &gl::Gl) {
-                let stride = ::std::mem::size_of::<Self>();
-                let offset = 0;
+            pub fn vertex_attrib_pointers(gl: &glow::Context) {
+                let stride = ::std::mem::size_of::<Self>() as i32;
+                let offset = 0 as i32;
 
                 #(#fields_vertex_attrib_pointer)*
             }
@@ -60,7 +60,7 @@ fn generate_struct_field_vertex_attrib_pointer_call(field: &syn::Field) -> quote
         .next()
         .unwrap_or_else(|| panic!("Field {} is missing #[location = ?] attribute", field_name));
 
-    let location_value: usize = match location_attr.value {
+    let location_value: u32 = match location_attr.value {
         syn::MetaItem::NameValue(_, syn::Lit::Str(ref s, _)) => s.parse().unwrap_or_else(|_| {
             panic!(
                 "Field {} location attribute value must contain an integer",
@@ -79,6 +79,6 @@ fn generate_struct_field_vertex_attrib_pointer_call(field: &syn::Field) -> quote
         unsafe {
             #field_ty::vertex_attrib_pointer(gl, stride, location, offset);
         }
-        let offset = offset + ::std::mem::size_of::<#field_ty>();
+        let offset = offset + ::std::mem::size_of::<#field_ty>() as i32;
     }
 }

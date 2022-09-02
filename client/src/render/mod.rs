@@ -3,7 +3,6 @@ mod block_mesher;
 mod block_render;
 mod crosshair;
 mod deferred;
-pub mod mesh;
 mod skydome;
 mod worldmesher;
 
@@ -19,7 +18,6 @@ pub use skydome::SkyDome;
 pub use worldmesher::WorldMesher;
 
 pub struct Rendering {
-    pub gl: gl::Gl,
     pub camera: PerspectiveCamera,
     underwater_color: Vec3,
     fog_distance: f32,
@@ -44,7 +42,6 @@ impl Rendering {
         .unwrap();
         let world_mesher = WorldMesher::new(data.block_registry.clone());
         Rendering {
-            gl: context.video().gl().clone(),
             camera: PerspectiveCamera::new(
                 data.starting_position,
                 0.0,
@@ -70,7 +67,7 @@ impl Rendering {
         self.deferred = DeferredPipeline::new(
             context.video().width(),
             context.video().height(),
-            &self.gl,
+            context.video().gl(),
             context.assets(),
         )
         .unwrap();
@@ -96,15 +93,15 @@ impl Rendering {
         out_of_range: &mut HashSet<ChunkColumnPos>,
     ) {
         // Render geometry to frame buffer
-        self.deferred.bind();
+        self.deferred.bind(context.video().gl());
 
-        context.video().gl().clear(0.0, 0.0, 0.0);
+        context.video().clear_screen();
 
         let max_range = data.world().render_range as i16;
         let center_col = data.world().center_col.clone();
 
         data.block_renderer.as_mut().unwrap().render(
-            &self.gl,
+            context.video().gl(),
             Mat4::identity(),
             &self.camera,
             max_range,
@@ -113,7 +110,7 @@ impl Rendering {
             out_of_range,
         );
 
-        self.deferred.unbind();
+        self.deferred.unbind(context.video().gl());
 
         let (render_back_color, fog_start, fog_end) = if in_water {
             (
@@ -140,6 +137,7 @@ impl Rendering {
 
         // Actual rendering to screen is done in sRGB color space
         self.deferred.render_to_screen(
+            context.video().gl(),
             &self.camera,
             context.video().width(),
             context.video().height(),
@@ -151,6 +149,7 @@ impl Rendering {
         );
 
         self.skydome.render(
+            context.video().gl(),
             glm::translation(&self.camera.position),
             &self.camera,
             data.daynight.get_fog_color(),
@@ -161,7 +160,7 @@ impl Rendering {
 
         // Render translucency framebuffer to screen with lighting and blending
         data.block_renderer.as_mut().unwrap().render_translucent(
-            &self.gl,
+            context.video().gl(),
             Mat4::identity(),
             &self.camera,
             &data.daynight.get_light_angle(),
@@ -175,8 +174,9 @@ impl Rendering {
         let half_width = context.video().width() as f32 / 2.0;
         let half_height = context.video().height() as f32 / 2.0;
         self.crosshair.render(
+            context.video().gl(),
             glm::translation(&Vec3::new(half_width, half_height, 0.0)),
-            data.gui_renderer().ui_camera(),
+            context.video().ui_camera(),
         );
     }
 }

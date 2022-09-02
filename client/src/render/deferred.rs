@@ -1,7 +1,7 @@
 use failure;
+use gamework::glow::*;
 use gamework::video::*;
 use gamework::*;
-use gl;
 use nalgebra_glm::*;
 use rand::Rng;
 
@@ -26,85 +26,86 @@ impl QuadVertex {
 }
 
 pub struct DeferredPipeline {
-    gl: gl::Gl,
-    program: Program,
-    framebuffer: FrameBuffer,
-    position_buffer: Texture,
-    color_buffer: Texture,
-    normal_buffer: Texture,
-    lights_buffer: Texture,
-    view_uniform: Option<Uniform>,
-    projection_uniform: Option<Uniform>,
-    light_dir_uniform: Option<Uniform>,
-    light_col_uniform: Option<Uniform>,
-    fog_col_uniform: Option<Uniform>,
-    fog_start_uniform: Option<Uniform>,
-    fog_end_uniform: Option<Uniform>,
-    random_texture: Option<Texture>,
-    ssao_texture_scale_uniform: Option<Uniform>,
-    _vbo: ArrayBuffer,
-    vao: VertexArray,
+    program: ShaderProgram,
+    framebuffer: FBO,
+    position_buffer: MyTexture,
+    color_buffer: MyTexture,
+    normal_buffer: MyTexture,
+    lights_buffer: MyTexture,
+    view_uniform: Option<UniformLocation>,
+    projection_uniform: Option<UniformLocation>,
+    light_dir_uniform: Option<UniformLocation>,
+    light_col_uniform: Option<UniformLocation>,
+    fog_col_uniform: Option<UniformLocation>,
+    fog_start_uniform: Option<UniformLocation>,
+    fog_end_uniform: Option<UniformLocation>,
+    random_texture: Option<MyTexture>,
+    ssao_texture_scale_uniform: Option<UniformLocation>,
+    _vbo: VBO,
+    vao: VAO,
 }
 
 impl DeferredPipeline {
     pub fn new(
         width: u32,
         height: u32,
-        gl: &gl::Gl,
+        gl: &glow::Context,
         assets: &Assets,
     ) -> Result<DeferredPipeline, failure::Error> {
         // https://www.gamedev.net/articles/programming/graphics/a-simple-and-practical-approach-to-ssao-r2753/
-        let program = Program::load(
+        let program = ShaderProgram::load(
             gl,
             assets,
-            vec!["shaders/deferred.vert", "shaders/deferred.frag"],
+            "shaders/deferred.vert",
+            "shaders/deferred.frag",
             "deferred".to_string(),
         )?;
-        program.set_used();
-        if let Some(uniform) = program.get_uniform("gPosition") {
-            uniform.set_uniform_1i(0);
+        program.set_used(gl);
+        if let Some(uniform) = program.get_uniform(gl, "gPosition") {
+            program.set_uniform_1i(gl, &uniform, 0);
         }
-        if let Some(uniform) = program.get_uniform("gColor") {
-            uniform.set_uniform_1i(1);
+        if let Some(uniform) = program.get_uniform(gl, "gColor") {
+            program.set_uniform_1i(gl, &uniform, 1);
         }
-        if let Some(uniform) = program.get_uniform("gNormal") {
-            uniform.set_uniform_1i(2);
+        if let Some(uniform) = program.get_uniform(gl, "gNormal") {
+            program.set_uniform_1i(gl, &uniform, 2);
         }
-        if let Some(uniform) = program.get_uniform("gLight") {
-            uniform.set_uniform_1i(3);
+        if let Some(uniform) = program.get_uniform(gl, "gLight") {
+            program.set_uniform_1i(gl, &uniform, 3);
         }
-        if let Some(uniform) = program.get_uniform("gRandom") {
-            uniform.set_uniform_1i(4);
+        if let Some(uniform) = program.get_uniform(gl, "gRandom") {
+            program.set_uniform_1i(gl, &uniform, 4);
         }
-        if let Some(uniform) = program.get_uniform("ssaoKernel") {
+        if let Some(uniform) = program.get_uniform(gl, "ssaoKernel") {
             // Based on https://learnopengl.com/Advanced-Lighting/SSAO
             let mut kernel = Vec::new();
             let mut rng = rand::thread_rng();
             for i in 0..SSAO_KERNEL_SIZE {
                 let scale = i as f32 / SSAO_KERNEL_SIZE as f32;
-                kernel.push(
-                    Vec3::new(
-                        rng.gen_range(-1.0, 1.0),
-                        rng.gen_range(-1.0, 1.0),
-                        rng.gen_range(0.0, 1.0),
-                    )
-                    .normalize()
-                        * scale,
-                );
+                let v = Vec3::new(
+                    rng.gen_range(-1.0, 1.0),
+                    rng.gen_range(-1.0, 1.0),
+                    rng.gen_range(0.0, 1.0),
+                )
+                .normalize()
+                    * scale;
+                kernel.push(v.x);
+                kernel.push(v.y);
+                kernel.push(v.z);
             }
-            uniform.set_uniform_3fv(&kernel);
+            program.set_uniform_3fv(gl, &uniform, &kernel);
         }
-        let view_uniform = program.get_uniform("View");
-        let projection_uniform = program.get_uniform("Projection");
-        let light_dir_uniform = program.get_uniform("sunLightDirection");
-        let light_col_uniform = program.get_uniform("sunLightColor");
-        let fog_col_uniform = program.get_uniform("fogColor");
-        let fog_start_uniform = program.get_uniform("fogStart");
-        let fog_end_uniform = program.get_uniform("fogEnd");
-        let ssao_texture_scale_uniform = program.get_uniform("ssaoTextureScale");
+        let view_uniform = program.get_uniform(gl, "View");
+        let projection_uniform = program.get_uniform(gl, "Projection");
+        let light_dir_uniform = program.get_uniform(gl, "sunLightDirection");
+        let light_col_uniform = program.get_uniform(gl, "sunLightColor");
+        let fog_col_uniform = program.get_uniform(gl, "fogColor");
+        let fog_start_uniform = program.get_uniform(gl, "fogStart");
+        let fog_end_uniform = program.get_uniform(gl, "fogEnd");
+        let ssao_texture_scale_uniform = program.get_uniform(gl, "ssaoTextureScale");
 
         let random_texture = Some(
-            Texture::load(
+            MyTexture::load(
                 &assets.assets_path("textures/random.png"),
                 gl,
                 TextureFormat::RGBA8,
@@ -115,21 +116,21 @@ impl DeferredPipeline {
         );
 
         // Vertex array
-        let mut _vbo = ArrayBuffer::new(gl);
+        let mut _vbo = VBO::new(gl);
         // Vertex array object
-        let vao = VertexArray::new(gl);
-        vao.bind();
-        _vbo.bind();
+        let vao = VAO::new(gl);
+        vao.bind(gl);
+        _vbo.bind(gl);
         let mut quad = Vec::new();
         quad.push(QuadVertex::new(-1.0, 1.0, 0.0, 1.0));
         quad.push(QuadVertex::new(-1.0, -1.0, 0.0, 0.0));
         quad.push(QuadVertex::new(1.0, 1.0, 1.0, 1.0));
         quad.push(QuadVertex::new(1.0, -1.0, 1.0, 0.0));
-        _vbo.static_draw_data(&quad, false);
+        _vbo.static_draw_data(gl, &quad);
         QuadVertex::vertex_attrib_pointers(gl);
 
         // Setup buffers to render to
-        let position_buffer = Texture::new_uninitialized(
+        let position_buffer = MyTexture::new_uninitialized(
             gl,
             width,
             height,
@@ -137,7 +138,7 @@ impl DeferredPipeline {
             TextureWrap::Clamp,
             TextureFilter::Nearest,
         )?;
-        let color_buffer = Texture::new_uninitialized(
+        let color_buffer = MyTexture::new_uninitialized(
             gl,
             width,
             height,
@@ -145,7 +146,7 @@ impl DeferredPipeline {
             TextureWrap::None,
             TextureFilter::Nearest,
         )?;
-        let normal_buffer = Texture::new_uninitialized(
+        let normal_buffer = MyTexture::new_uninitialized(
             gl,
             width,
             height,
@@ -153,7 +154,7 @@ impl DeferredPipeline {
             TextureWrap::None,
             TextureFilter::Nearest,
         )?;
-        let lights_buffer = Texture::new_uninitialized(
+        let lights_buffer = MyTexture::new_uninitialized(
             gl,
             width,
             height,
@@ -169,10 +170,9 @@ impl DeferredPipeline {
         ];
 
         // Now create the framebuffer
-        let framebuffer = FrameBuffer::new(gl, width, height, true, buffers)?;
+        let framebuffer = FBO::new(gl, width, height, true, buffers)?;
 
         Ok(DeferredPipeline {
-            gl: gl.clone(),
             program,
             framebuffer,
             position_buffer,
@@ -193,16 +193,17 @@ impl DeferredPipeline {
         })
     }
 
-    pub fn bind(&self) {
-        self.framebuffer.bind();
+    pub fn bind(&self, gl: &glow::Context) {
+        self.framebuffer.bind(gl);
     }
 
-    pub fn unbind(&self) {
-        self.framebuffer.unbind();
+    pub fn unbind(&self, gl: &glow::Context) {
+        self.framebuffer.unbind(gl);
     }
 
     pub fn render_to_screen(
         &mut self,
+        gl: &glow::Context,
         camera: &PerspectiveCamera,
         width: u32,
         height: u32,
@@ -212,50 +213,52 @@ impl DeferredPipeline {
         fog_start: f32,
         fog_end: f32,
     ) {
-        self.framebuffer.copy_depth_to_default();
-        self.program.set_used();
+        self.framebuffer.copy_depth_to_default(gl);
+        self.program.set_used(gl);
         if let Some(uniform) = &self.view_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_view());
+            self.program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_view());
         }
         if let Some(uniform) = &self.projection_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_projection());
+            self.program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_projection());
         }
         if let Some(uniform) = &self.light_dir_uniform {
-            uniform.set_uniform_3f(sun_dir);
+            self.program.set_uniform_3f(gl, &uniform, sun_dir);
         }
         if let Some(uniform) = &self.light_col_uniform {
-            uniform.set_uniform_3f(sun_col);
+            self.program.set_uniform_3f(gl, &uniform, sun_col);
         }
         if let Some(uniform) = &self.fog_col_uniform {
-            uniform.set_uniform_3f(fog_col);
+            self.program.set_uniform_3f(gl, &uniform, fog_col);
         }
         if let Some(uniform) = &self.fog_start_uniform {
-            uniform.set_uniform_1f(fog_start);
+            self.program.set_uniform_1f(gl, &uniform, fog_start);
         }
         if let Some(uniform) = &self.fog_end_uniform {
-            uniform.set_uniform_1f(fog_end);
+            self.program.set_uniform_1f(gl, &uniform, fog_end);
         }
         if let Some(uniform) = &self.ssao_texture_scale_uniform {
             let texture_size = 64.0;
             let texture_ratio =
                 Vec2::new(width as f32 / texture_size, height as f32 / texture_size);
-            uniform.set_uniform_2f(&texture_ratio);
+            self.program.set_uniform_2f(gl, &uniform, &texture_ratio);
         }
-        self.vao.bind();
+        self.vao.bind(gl);
         unsafe {
-            self.gl.Disable(gl::CULL_FACE);
-            self.gl.Disable(gl::DEPTH_TEST);
-            self.gl.Disable(gl::BLEND);
-            self.gl.Enable(gl::FRAMEBUFFER_SRGB);
-            self.position_buffer.bind_at(0);
-            self.color_buffer.bind_at(1);
-            self.normal_buffer.bind_at(2);
-            self.lights_buffer.bind_at(3);
+            gl.disable(glow::CULL_FACE);
+            gl.disable(glow::DEPTH_TEST);
+            gl.disable(glow::BLEND);
+            gl.enable(glow::FRAMEBUFFER_SRGB);
+            self.position_buffer.bind_at(gl, 0);
+            self.color_buffer.bind_at(gl, 1);
+            self.normal_buffer.bind_at(gl, 2);
+            self.lights_buffer.bind_at(gl, 3);
             if let Some(random_texture) = &self.random_texture {
-                random_texture.bind_at(4);
+                random_texture.bind_at(gl, 4);
             }
-            self.gl.DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-            self.gl.Disable(gl::FRAMEBUFFER_SRGB);
+            gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
+            gl.disable(glow::FRAMEBUFFER_SRGB);
         }
     }
 }

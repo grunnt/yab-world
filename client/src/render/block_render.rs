@@ -1,31 +1,31 @@
 use crate::render::*;
 use common::{block::BlockRegistry, chunk::*};
 use failure;
+use gamework::glow::*;
 use gamework::video::*;
 use gamework::*;
-use gl;
 use log::*;
 use nalgebra_glm::*;
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
 
 pub struct BlockRenderer {
-    program: Program,
-    model_uniform: Option<Uniform>,
-    view_uniform: Option<Uniform>,
-    projection_uniform: Option<Uniform>,
-    z_offset_uniform: Option<Uniform>,
-    t_program: Program,
-    t_model_uniform: Option<Uniform>,
-    t_view_uniform: Option<Uniform>,
-    t_projection_uniform: Option<Uniform>,
-    t_z_offset_uniform: Option<Uniform>,
-    light_dir_uniform: Option<Uniform>,
-    light_col_uniform: Option<Uniform>,
-    fog_col_uniform: Option<Uniform>,
-    fog_start_uniform: Option<Uniform>,
-    fog_end_uniform: Option<Uniform>,
-    block_textures: Texture,
+    program: ShaderProgram,
+    model_uniform: Option<UniformLocation>,
+    view_uniform: Option<UniformLocation>,
+    projection_uniform: Option<UniformLocation>,
+    z_offset_uniform: Option<UniformLocation>,
+    t_program: ShaderProgram,
+    t_model_uniform: Option<UniformLocation>,
+    t_view_uniform: Option<UniformLocation>,
+    t_projection_uniform: Option<UniformLocation>,
+    t_z_offset_uniform: Option<UniformLocation>,
+    light_dir_uniform: Option<UniformLocation>,
+    light_col_uniform: Option<UniformLocation>,
+    fog_col_uniform: Option<UniformLocation>,
+    fog_start_uniform: Option<UniformLocation>,
+    fog_end_uniform: Option<UniformLocation>,
+    block_textures: MyTexture,
     pub meshes: HashMap<ChunkPos, BlockMesh>,
     pub translucent_meshes: HashMap<ChunkPos, BlockMesh>,
     pub mesh_count: usize,
@@ -34,30 +34,31 @@ pub struct BlockRenderer {
 
 impl BlockRenderer {
     pub fn new(
-        gl: &gl::Gl,
+        gl: &glow::Context,
         assets: &Assets,
         block_registry: &BlockRegistry,
     ) -> Result<BlockRenderer, failure::Error> {
         // Normal rendering
-        let program = Program::load(
+        let program = ShaderProgram::load(
             gl,
             assets,
-            vec!["shaders/block.vert", "shaders/block.frag"],
+            "shaders/block.vert",
+            "shaders/block.frag",
             "block".to_string(),
         )?;
-        program.set_used();
-        let model_uniform = program.get_uniform("Model");
-        let view_uniform = program.get_uniform("View");
-        let projection_uniform = program.get_uniform("Projection");
-        let z_offset_uniform = program.get_uniform("zOffset");
-        if let Some(uniform) = program.get_uniform("blockTextures") {
-            uniform.set_uniform_1i(0);
+        program.set_used(gl);
+        let model_uniform = program.get_uniform(gl, "Model");
+        let view_uniform = program.get_uniform(gl, "View");
+        let projection_uniform = program.get_uniform(gl, "Projection");
+        let z_offset_uniform = program.get_uniform(gl, "zOffset");
+        if let Some(uniform) = program.get_uniform(gl, "blockTextures") {
+            program.set_uniform_1i(gl, &uniform, 0);
         }
         // Build a list of texture file names sorted by texture array index
         let texture_paths = block_registry.texture_paths_sorted(assets);
         debug!("Loading {} block texture files..", texture_paths.len());
 
-        let block_textures = Texture::load_array(
+        let block_textures = MyTexture::load_array(
             texture_paths,
             TextureFormat::SRGBA8,
             TextureWrap::None,
@@ -67,24 +68,25 @@ impl BlockRenderer {
         .unwrap();
 
         // Translucent rendering
-        let t_program = Program::load(
+        let t_program = ShaderProgram::load(
             gl,
             assets,
-            vec!["shaders/translucent.vert", "shaders/translucent.frag"],
+            "shaders/translucent.vert",
+            "shaders/translucent.frag",
             "translucent".to_string(),
         )?;
-        t_program.set_used();
-        let t_model_uniform = t_program.get_uniform("Model");
-        let t_view_uniform = t_program.get_uniform("View");
-        let t_projection_uniform = t_program.get_uniform("Projection");
-        let t_z_offset_uniform = t_program.get_uniform("zOffset");
-        let light_dir_uniform = t_program.get_uniform("sunLightDirection");
-        let light_col_uniform = t_program.get_uniform("sunLightColor");
-        let fog_col_uniform = t_program.get_uniform("fogColor");
-        let fog_start_uniform = t_program.get_uniform("fogStart");
-        let fog_end_uniform = t_program.get_uniform("fogEnd");
-        if let Some(uniform) = program.get_uniform("blockTextures") {
-            uniform.set_uniform_1i(0);
+        t_program.set_used(gl);
+        let t_model_uniform = t_program.get_uniform(gl, "Model");
+        let t_view_uniform = t_program.get_uniform(gl, "View");
+        let t_projection_uniform = t_program.get_uniform(gl, "Projection");
+        let t_z_offset_uniform = t_program.get_uniform(gl, "zOffset");
+        let light_dir_uniform = t_program.get_uniform(gl, "sunLightDirection");
+        let light_col_uniform = t_program.get_uniform(gl, "sunLightColor");
+        let fog_col_uniform = t_program.get_uniform(gl, "fogColor");
+        let fog_start_uniform = t_program.get_uniform(gl, "fogStart");
+        let fog_end_uniform = t_program.get_uniform(gl, "fogEnd");
+        if let Some(uniform) = t_program.get_uniform(gl, "blockTextures") {
+            t_program.set_uniform_1i(gl, &uniform, 0);
         }
 
         let meshes = HashMap::new();
@@ -142,7 +144,7 @@ impl BlockRenderer {
 
     pub fn render(
         &mut self,
-        gl: &gl::Gl,
+        gl: &glow::Context,
         model: Mat4,
         camera: &PerspectiveCamera,
         max_range: i16,
@@ -150,21 +152,23 @@ impl BlockRenderer {
         render_lines: bool,
         out_of_range: &mut HashSet<ChunkColumnPos>,
     ) {
-        self.program.set_used();
+        self.program.set_used(gl);
         if let Some(uniform) = &self.model_uniform {
-            uniform.set_uniform_matrix_4fv(&model);
+            self.program.set_uniform_matrix_4fv(gl, &uniform, &model);
         }
         if let Some(uniform) = &self.view_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_view());
+            self.program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_view());
         }
         if let Some(uniform) = &self.projection_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_projection());
+            self.program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_projection());
         }
-        self.block_textures.bind_at(0);
+        self.block_textures.bind_at(gl, 0);
         unsafe {
-            gl.Enable(gl::CULL_FACE);
-            gl.Enable(gl::DEPTH_TEST);
-            gl.Disable(gl::BLEND);
+            gl.enable(glow::CULL_FACE);
+            gl.enable(glow::DEPTH_TEST);
+            gl.disable(glow::BLEND);
         }
         let mut vertex_count = 0;
         let mut mesh_count = 0;
@@ -178,7 +182,7 @@ impl BlockRenderer {
 
             if render_lines {
                 unsafe {
-                    gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                    gl.polygon_mode(glow::FRONT_AND_BACK, glow::LINE);
                 }
             }
 
@@ -187,18 +191,19 @@ impl BlockRenderer {
                 duration.as_secs() as f32 + duration.subsec_nanos() as f32 / 1_000_000_000.0;
             if mesh.animate && duration_s < 1.0 {
                 if let Some(uniform) = &self.z_offset_uniform {
-                    uniform.set_uniform_1f(0.5 + duration_s.powf(0.5) * 0.5);
+                    self.program
+                        .set_uniform_1f(gl, &uniform, 0.5 + duration_s.powf(0.5) * 0.5);
                 }
             }
             mesh.render(gl);
             if mesh.animate && duration_s < 1.0 {
                 if let Some(uniform) = &self.z_offset_uniform {
-                    uniform.set_uniform_1f(1.0);
+                    self.program.set_uniform_1f(gl, &uniform, 1.0);
                 }
             }
             if render_lines {
                 unsafe {
-                    gl.PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+                    gl.polygon_mode(glow::FRONT_AND_BACK, glow::FILL);
                 }
             }
             vertex_count = vertex_count + mesh.vertex_count;
@@ -210,7 +215,7 @@ impl BlockRenderer {
 
     pub fn render_translucent(
         &mut self,
-        gl: &gl::Gl,
+        gl: &glow::Context,
         model: Mat4,
         camera: &PerspectiveCamera,
         sun_dir: &Vec3,
@@ -219,37 +224,40 @@ impl BlockRenderer {
         fog_start: f32,
         fog_end: f32,
     ) {
-        self.t_program.set_used();
+        self.t_program.set_used(gl);
         if let Some(uniform) = &self.t_model_uniform {
-            uniform.set_uniform_matrix_4fv(&model);
+            self.t_program.set_uniform_matrix_4fv(gl, &uniform, &model);
         }
         if let Some(uniform) = &self.t_view_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_view());
+            self.t_program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_view());
         }
         if let Some(uniform) = &self.t_projection_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_projection());
+            self.t_program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_projection());
         }
         if let Some(uniform) = &self.light_dir_uniform {
-            uniform.set_uniform_3f(sun_dir);
+            self.t_program.set_uniform_3f(gl, &uniform, sun_dir);
         }
         if let Some(uniform) = &self.light_col_uniform {
-            uniform.set_uniform_3f(sun_col);
+            self.t_program.set_uniform_3f(gl, &uniform, sun_col);
         }
         if let Some(uniform) = &self.fog_col_uniform {
-            uniform.set_uniform_3f(fog_col);
+            self.t_program.set_uniform_3f(gl, &uniform, fog_col);
         }
         if let Some(uniform) = &self.fog_start_uniform {
-            uniform.set_uniform_1f(fog_start);
+            self.t_program.set_uniform_1f(gl, &uniform, fog_start);
         }
         if let Some(uniform) = &self.fog_end_uniform {
-            uniform.set_uniform_1f(fog_end);
+            self.t_program.set_uniform_1f(gl, &uniform, fog_end);
         }
-        self.block_textures.bind_at(0);
+        self.block_textures.bind_at(gl, 0);
         unsafe {
-            gl.Disable(gl::CULL_FACE);
-            gl.Enable(gl::DEPTH_TEST);
-            gl.Enable(gl::BLEND);
-            gl.Enable(gl::FRAMEBUFFER_SRGB);
+            gl.disable(glow::CULL_FACE);
+            gl.enable(glow::DEPTH_TEST);
+            gl.enable(glow::BLEND);
+            gl.blend_func(glow::ONE, glow::ONE_MINUS_SRC_ALPHA);
+            gl.enable(glow::FRAMEBUFFER_SRGB);
         }
         let mut vertex_count = self.triangle_count * 3;
         let mut mesh_count = self.mesh_count;
@@ -260,21 +268,22 @@ impl BlockRenderer {
                 duration.as_secs() as f32 + duration.subsec_nanos() as f32 / 1_000_000_000.0;
             if mesh.animate && duration_s < 1.0 {
                 if let Some(uniform) = &self.t_z_offset_uniform {
-                    uniform.set_uniform_1f(0.5 + duration_s.powf(0.5) * 0.5);
+                    self.t_program
+                        .set_uniform_1f(gl, &uniform, 0.5 + duration_s.powf(0.5) * 0.5);
                 }
             }
             mesh.render(gl);
             if mesh.animate && duration_s < 1.0 {
                 if let Some(uniform) = &self.t_z_offset_uniform {
-                    uniform.set_uniform_1f(1.0);
+                    self.t_program.set_uniform_1f(gl, &uniform, 1.0);
                 }
             }
             vertex_count = vertex_count + mesh.vertex_count as usize;
             mesh_count = mesh_count + 1;
         }
         unsafe {
-            gl.Enable(gl::CULL_FACE);
-            gl.Disable(gl::FRAMEBUFFER_SRGB);
+            gl.enable(glow::CULL_FACE);
+            gl.disable(glow::FRAMEBUFFER_SRGB);
         }
         self.triangle_count = vertex_count as usize / 3;
         self.mesh_count = mesh_count;

@@ -1,10 +1,10 @@
 use super::*;
-use crate::video::texture::Texture;
+use crate::video::texture::MyTexture;
 use std::fs;
 use std::{collections::HashMap, path::Path};
 
 pub struct TextureArray {
-    texture: Texture,
+    texture: MyTexture,
     name_layer_map: HashMap<String, f32>,
 }
 
@@ -15,7 +15,7 @@ impl TextureArray {
         format: TextureFormat,
         wrap: TextureWrap,
         filter: TextureFilter,
-        gl: &gl::Gl,
+        gl: &glow::Context,
     ) -> TextureArray {
         let paths = match fs::read_dir(source_directory) {
             Ok(paths) => paths,
@@ -41,7 +41,7 @@ impl TextureArray {
             }
         }
 
-        let texture = Texture::load_array(image_paths, format, wrap, filter, gl).unwrap();
+        let texture = MyTexture::load_array(image_paths, format, wrap, filter, gl).unwrap();
 
         TextureArray {
             texture,
@@ -50,7 +50,7 @@ impl TextureArray {
     }
 
     /// Get a reference to the underlying texture
-    pub fn texture(&self) -> &Texture {
+    pub fn texture(&self) -> &MyTexture {
         &self.texture
     }
 

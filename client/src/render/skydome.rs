@@ -1,4 +1,4 @@
-use gamework::gl;
+use gamework::glow;
 use gamework::video::*;
 use gamework::*;
 use nalgebra_glm::*;
@@ -15,37 +15,37 @@ pub struct SkyDomeVertex {
 }
 
 pub struct SkyDome {
-    gl: gl::Gl,
-    program: Program,
-    _vbo: ArrayBuffer,
-    vao: VertexArray,
-    vertex_count: gl::types::GLsizei,
-    model_uniform: Option<Uniform>,
-    view_uniform: Option<Uniform>,
-    projection_uniform: Option<Uniform>,
-    fog_color_uniform: Option<Uniform>,
-    sky_color_uniform: Option<Uniform>,
-    light_dir_uniform: Option<Uniform>,
-    light_col_uniform: Option<Uniform>,
+    program: ShaderProgram,
+    _vbo: VBO,
+    vao: VAO,
+    vertex_count: i32,
+    model_uniform: Option<UniformLocation>,
+    view_uniform: Option<UniformLocation>,
+    projection_uniform: Option<UniformLocation>,
+    fog_color_uniform: Option<UniformLocation>,
+    sky_color_uniform: Option<UniformLocation>,
+    light_dir_uniform: Option<UniformLocation>,
+    light_col_uniform: Option<UniformLocation>,
 }
 
 impl SkyDome {
-    pub fn new(gl: &gl::Gl, assets: &Assets) -> SkyDome {
-        let program = Program::load(
+    pub fn new(gl: &glow::Context, assets: &Assets) -> SkyDome {
+        let program = ShaderProgram::load(
             gl,
             assets,
-            vec!["shaders/skydome.vert", "shaders/skydome.frag"],
+            "shaders/skydome.vert",
+            "shaders/skydome.frag",
             "skydome".to_string(),
         )
         .unwrap();
-        program.set_used();
-        let model_uniform = program.get_uniform("Model");
-        let view_uniform = program.get_uniform("View");
-        let projection_uniform = program.get_uniform("Projection");
-        let fog_color_uniform = program.get_uniform("fogColor");
-        let sky_color_uniform = program.get_uniform("skyColor");
-        let light_dir_uniform = program.get_uniform("sunLightDirection");
-        let light_col_uniform = program.get_uniform("sunColor");
+        program.set_used(gl);
+        let model_uniform = program.get_uniform(gl, "Model");
+        let view_uniform = program.get_uniform(gl, "View");
+        let projection_uniform = program.get_uniform(gl, "Projection");
+        let fog_color_uniform = program.get_uniform(gl, "fogColor");
+        let sky_color_uniform = program.get_uniform(gl, "skyColor");
+        let light_dir_uniform = program.get_uniform(gl, "sunLightDirection");
+        let light_col_uniform = program.get_uniform(gl, "sunColor");
 
         // Currently model is a full sphere, we might change this to hemisphere for performance
         let (models, _) = tobj::load_obj(assets.assets_path("objects/skydome.obj"), true)
@@ -74,20 +74,19 @@ impl SkyDome {
         }
 
         // Vertex array
-        let mut _vbo = ArrayBuffer::new(gl);
-        let vao = VertexArray::new(gl);
+        let mut _vbo = VBO::new(gl);
+        let vao = VAO::new(gl);
 
-        vao.bind();
-        _vbo.bind();
-        _vbo.static_draw_data(&vertices, false);
+        vao.bind(gl);
+        _vbo.bind(gl);
+        _vbo.static_draw_data(gl, &vertices);
         SkyDomeVertex::vertex_attrib_pointers(gl);
 
         SkyDome {
-            gl: gl.clone(),
             program,
             _vbo,
             vao,
-            vertex_count: vertices.len() as gl::types::GLsizei,
+            vertex_count: vertices.len() as i32,
             model_uniform,
             view_uniform,
             projection_uniform,
@@ -100,6 +99,7 @@ impl SkyDome {
 
     pub fn render(
         &self,
+        gl: &glow::Context,
         model: Mat4,
         camera: &PerspectiveCamera,
         fog_color: Vec3,
@@ -107,39 +107,42 @@ impl SkyDome {
         sun_dir: &Vec3,
         sun_col: &Vec3,
     ) {
-        self.program.set_used();
+        self.program.set_used(gl);
         if let Some(uniform) = &self.model_uniform {
-            uniform.set_uniform_matrix_4fv(&model);
+            self.program.set_uniform_matrix_4fv(gl, &uniform, &model);
         }
         if let Some(uniform) = &self.view_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_view());
+            self.program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_view());
         }
         if let Some(uniform) = &self.projection_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_projection());
+            self.program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_projection());
         }
         if let Some(uniform) = &self.fog_color_uniform {
-            uniform.set_uniform_3f(&fog_color);
+            self.program.set_uniform_3f(gl, &uniform, &fog_color);
         }
         if let Some(uniform) = &self.sky_color_uniform {
-            uniform.set_uniform_3f(&sky_color);
+            self.program.set_uniform_3f(gl, &uniform, &sky_color);
         }
         if let Some(uniform) = &self.light_dir_uniform {
-            uniform.set_uniform_3f(&(*sun_dir * -1.0));
+            self.program
+                .set_uniform_3f(gl, &uniform, &(*sun_dir * -1.0));
         }
         if let Some(uniform) = &self.light_col_uniform {
-            uniform.set_uniform_3f(sun_col);
+            self.program.set_uniform_3f(gl, &uniform, sun_col);
         }
-        self.vao.bind();
+        self.vao.bind(gl);
         unsafe {
-            self.gl.Enable(gl::CULL_FACE);
-            self.gl.Enable(gl::DEPTH_TEST);
-            self.gl.Disable(gl::BLEND);
-            self.gl.Enable(gl::FRAMEBUFFER_SRGB);
+            gl.enable(glow::CULL_FACE);
+            gl.enable(glow::DEPTH_TEST);
+            gl.disable(glow::BLEND);
+            gl.enable(glow::FRAMEBUFFER_SRGB);
         }
-        self.vao.bind();
+        self.vao.bind(gl);
         unsafe {
-            self.gl.DrawArrays(gl::TRIANGLES, 0, self.vertex_count);
-            self.gl.Disable(gl::FRAMEBUFFER_SRGB);
+            gl.draw_arrays(glow::TRIANGLES, 0, self.vertex_count);
+            gl.disable(glow::FRAMEBUFFER_SRGB);
         }
     }
 }

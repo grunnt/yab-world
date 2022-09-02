@@ -35,13 +35,14 @@ impl<GameContext: SharedContext> StateManager<GameContext> {
     pub fn update(
         &mut self,
         delta: f32,
+        gui: &egui::Context,
         input_events: &Vec<InputEvent>,
         context: &mut SystemContext,
     ) -> bool {
         assert!(!self.state_stack.is_empty());
         let top_state = self.state_stack.last_mut().unwrap();
         let mut exit = false;
-        match top_state.update(delta, &mut self.data, input_events, context) {
+        match top_state.update(delta, &mut self.data, gui, input_events, context) {
             StateCommand::OpenState { mut state } => {
                 debug!("Open state {}", state.type_name());
                 state.initialize(&mut self.data, context);
@@ -64,9 +65,6 @@ impl<GameContext: SharedContext> StateManager<GameContext> {
                 self.state_stack.pop();
                 if self.state_stack.is_empty() {
                     exit = true;
-                }
-                if let Some(state) = self.state_stack.last_mut() {
-                    state.resize(&mut self.data, context);
                 }
             }
             StateCommand::None => {}

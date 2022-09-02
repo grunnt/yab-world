@@ -1,9 +1,6 @@
 use crate::physics::physics::Physics;
-use crate::{gui::Label, GameContext};
-use crate::{
-    gui::{gui_renderer::GuiRenderer, ProgressBar},
-    world::worldhandler::WorldHandler,
-};
+use crate::world::worldhandler::WorldHandler;
+use crate::GameContext;
 use crate::{in_game::InGameState, render::*};
 use common::block::{BlockDef, BlockRegistry};
 use common::chunk::*;
@@ -31,65 +28,23 @@ pub enum StartGameStage {
 }
 
 pub struct StartGameState {
-    gui: Gui<GuiRenderer>,
     preload_count: usize,
     player_chunk_stored: bool,
     stage: StartGameStage,
-    progress_label: WidgetId,
-    progress_bar: WidgetId,
 }
 
 impl StartGameState {
     pub fn new() -> Self {
-        let mut gui = Gui::new(
-            vec![flex_col(1.0), fixed_col(400.0), flex_col(1.0)],
-            vec![
-                flex_row(1.0),
-                fixed_row(50.0),
-                fixed_row(30.0),
-                fixed_row(50.0),
-                flex_row(1.0),
-            ],
-        );
-        gui.place(
-            gui.root_id(),
-            1,
-            1,
-            Box::new(Label::new("Loading...".to_string())),
-            CellAlignment::Center,
-        );
-        let progress_bar = gui.place(
-            gui.root_id(),
-            1,
-            2,
-            Box::new(ProgressBar::new(0.0, 1.0)),
-            CellAlignment::Fill,
-        );
-        let progress_label = gui.place(
-            gui.root_id(),
-            1,
-            3,
-            Box::new(Label::new("".to_string())),
-            CellAlignment::Fill,
-        );
         StartGameState {
-            gui,
             preload_count: 0,
             player_chunk_stored: false,
             stage: StartGameStage::StartingServer,
-            progress_label,
-            progress_bar,
         }
     }
 }
 
 impl State<GameContext> for StartGameState {
     fn initialize(&mut self, _data: &mut GameContext, _context: &mut SystemContext) {
-        self.gui.set_value(
-            &self.progress_label,
-            GuiValue::String("Starting server".to_string()),
-        );
-        self.gui.set_value(&self.progress_bar, GuiValue::Float(0.0));
         self.preload_count = 0;
         self.player_chunk_stored = false;
         self.stage = StartGameStage::StartingServer;
@@ -99,16 +54,12 @@ impl State<GameContext> for StartGameState {
         &mut self,
         _delta: f32,
         data: &mut GameContext,
-        input_events: &Vec<InputEvent>,
+        gui: &egui::Context,
+        _input_events: &Vec<InputEvent>,
         context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
-        self.gui.update(
-            input_events,
-            context.video().screen_size(),
-            data.gui_renderer_mut(),
-        );
         let stage = self.stage;
-        match stage {
+        let (message, progress) = match stage {
             StartGameStage::StartingServer => {
                 // Start the server if needed
                 if let Some(server_address) = &data.server_address {
@@ -122,10 +73,7 @@ impl State<GameContext> for StartGameState {
                     data.server = Some(server);
                 }
                 self.stage = StartGameStage::Connecting;
-                self.gui.set_value(
-                    &self.progress_label,
-                    GuiValue::String("Connecting to server".to_string()),
-                );
+                ("Connecting", 0.0)
             }
             StartGameStage::Connecting => {
                 // Connect to the server and sign in
@@ -140,11 +88,8 @@ impl State<GameContext> for StartGameState {
                     })
                     .unwrap();
                 data.comms_client = Some(comms_client);
-                self.gui.set_value(
-                    &self.progress_label,
-                    GuiValue::String("Waiting for server response".to_string()),
-                );
                 self.stage = StartGameStage::WaitForSignInConfirm;
+                ("Signing in", 0.1)
             }
             StartGameStage::WaitForSignInConfirm => {
                 if let Some(message) = data.comms_client.as_mut().unwrap().try_receive() {
@@ -198,10 +143,6 @@ impl State<GameContext> for StartGameState {
                                 .unwrap(),
                             );
                             self.stage = StartGameStage::RequestingChunks;
-                            self.gui.set_value(
-                                &self.progress_label,
-                                GuiValue::String("Requesting world data".to_string()),
-                            );
                         }
                         _ => {
                             panic!("unexpected server response for sign in");
@@ -210,6 +151,7 @@ impl State<GameContext> for StartGameState {
                 } else {
                     sleep(PRELOAD_SLEEP_DURATION);
                 }
+                ("Requesting chunks", 0.2)
             }
             StartGameStage::RequestingChunks => {
                 let mut columns = Vec::new();
@@ -230,26 +172,14 @@ impl State<GameContext> for StartGameState {
                         .unwrap();
                 }
                 self.stage = StartGameStage::DownloadingChunks;
-                self.gui.set_value(
-                    &self.progress_label,
-                    GuiValue::String("Receiving world data".to_string()),
-                );
+                ("Downloading chunks", 0.3)
             }
             StartGameStage::DownloadingChunks => {
                 let world = data.world.as_mut().unwrap();
 
                 if self.preload_count <= 0 {
-                    self.gui.set_value(
-                        &self.progress_label,
-                        GuiValue::String("Entering world".to_string()),
-                    );
                     self.stage = StartGameStage::EnteringGame;
                     return StateCommand::None;
-                } else if self.preload_count <= 0 {
-                    self.gui.set_value(
-                        &self.progress_label,
-                        GuiValue::String("Waiting for player chunk".to_string()),
-                    );
                 }
 
                 sleep(PRELOAD_SLEEP_DURATION);
@@ -277,16 +207,14 @@ impl State<GameContext> for StartGameState {
                 let block_renderer = data.block_renderer.as_mut().unwrap();
                 while let Some((cp, vertices, translucent_vertices)) = world.try_receive_vertices()
                 {
-                    if let Some(mesh) =
-                        BlockMesh::new(&context.video().gl(), &vertices, true, false)
-                    {
+                    if let Some(mesh) = BlockMesh::new(&context.video().gl(), &vertices, false) {
                         if block_renderer.meshes.contains_key(&cp) {
                             warn!("Duplicate mesh for {:?}", cp);
                         }
                         block_renderer.insert_mesh_pos(cp, mesh);
                     }
                     if let Some(mesh) =
-                        BlockMesh::new(&context.video().gl(), &translucent_vertices, true, false)
+                        BlockMesh::new(&context.video().gl(), &translucent_vertices, false)
                     {
                         if block_renderer.translucent_meshes.contains_key(&cp) {
                             warn!("Duplicate mesh for {:?}", cp);
@@ -297,39 +225,34 @@ impl State<GameContext> for StartGameState {
 
                 let progress = (PRELOAD_COLUMN_COUNT - self.preload_count) as f32
                     / PRELOAD_COLUMN_COUNT as f32;
-                self.gui
-                    .set_value(&self.progress_bar, GuiValue::Float(progress));
-                self.gui.set_value(
-                    &self.progress_label,
-                    GuiValue::String(
-                        format!("Receiving world data ({}%)", (progress * 100.0) as i16)
-                            .to_string(),
-                    ),
-                );
+                ("Downloading chunks", 0.3 + progress * 0.7)
             }
             StartGameStage::EnteringGame => {
-                self.gui.set_value(
-                    &self.progress_label,
-                    GuiValue::String("Entering world".to_string()),
-                );
                 return StateCommand::ReplaceState {
                     state: Box::new(InGameState::new()),
                 };
             }
-        }
+        };
+        show_message(gui, message, progress);
 
         StateCommand::None
     }
 
-    fn resize(&mut self, data: &mut GameContext, context: &mut SystemContext) {
-        data.gui_renderer_mut()
-            .resize(context.video().screen_size());
-    }
+    fn resize(&mut self, _data: &mut GameContext, _context: &mut SystemContext) {}
 
-    fn render(&mut self, data: &mut GameContext, _context: &mut SystemContext) {
-        self.gui.paint(data.gui_renderer_mut());
-        data.gui_renderer_mut().render();
-    }
+    fn render(&mut self, _data: &mut GameContext, _context: &mut SystemContext) {}
 
     fn shutdown(&mut self) {}
+}
+
+fn show_message(gui: &egui::Context, message: &str, progress: f32) {
+    egui::CentralPanel::default().show(gui, |ui| {
+        ui.with_layout(
+            egui::Layout::top_down_justified(egui::Align::Center),
+            |ui| {
+                ui.label(message);
+                ui.add(egui::ProgressBar::new(progress).show_percentage());
+            },
+        );
+    });
 }

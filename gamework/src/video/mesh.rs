@@ -1,9 +1,10 @@
 #![allow(dead_code)]
 
 use crate::video::buffer;
-use crate::video::data;
-use gl;
-use render_derive::VertexAttribPointers;
+use glow::*;
+use render_derive::*;
+
+use super::data;
 
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
 #[repr(C, packed)]
@@ -24,52 +25,56 @@ impl Vertex {
 }
 
 pub struct Mesh {
-    gl: gl::Gl,
-    vbo: buffer::ArrayBuffer,
-    vao: buffer::VertexArray,
-    vertex_count: gl::types::GLsizei,
+    vbo: buffer::VBO,
+    vao: buffer::VAO,
+    vertex_count: i32,
 }
 
 impl Mesh {
-    pub fn new(gl: &gl::Gl, vertices: &Vec<Vertex>) -> Mesh {
+    pub fn new(gl: &glow::Context, vertices: &Vec<Vertex>) -> Mesh {
         // Vertex buffer object
-        let mut vbo = buffer::ArrayBuffer::new(gl);
+        let vbo = buffer::VBO::new(gl);
 
         // Vertex array object
-        let vao = buffer::VertexArray::new(gl);
+        let vao = buffer::VAO::new(gl);
 
         // Load the vertices and bind the attributes
-        vao.bind();
-        vbo.bind();
-        vbo.static_draw_data(vertices, false);
+        vao.bind(gl);
+        vbo.bind(gl);
+        vbo.static_draw_data(gl, vertices);
         Vertex::vertex_attrib_pointers(gl);
 
         Mesh {
-            gl: gl.clone(),
             vbo,
             vao,
-            vertex_count: vertices.len() as gl::types::GLsizei,
+            vertex_count: vertices.len() as i32,
         }
     }
 
-    pub fn render_triangles(&mut self) {
-        self.vao.bind();
+    pub fn render_triangles(&self, gl: &glow::Context) {
+        self.vao.bind(gl);
         unsafe {
-            self.gl.DrawArrays(gl::TRIANGLES, 0, self.vertex_count);
+            gl.draw_arrays(glow::TRIANGLES, 0, self.vertex_count);
         }
     }
 
-    pub fn render_lines(&mut self) {
-        self.vao.bind();
+    pub fn render_lines(&self, gl: &glow::Context) {
+        self.vao.bind(gl);
         unsafe {
-            self.gl.DrawArrays(gl::LINES, 0, self.vertex_count);
+            gl.draw_arrays(glow::LINES, 0, self.vertex_count);
         }
     }
 
-    pub fn render_points(&mut self) {
-        self.vao.bind();
+    pub fn render_points(&mut self, gl: &glow::Context) {
+        self.vao.bind(gl);
         unsafe {
-            self.gl.DrawArrays(gl::POINTS, 0, self.vertex_count);
+            gl.draw_arrays(glow::POINTS, 0, self.vertex_count);
         }
+    }
+
+    /// Drop the mesh buffers. This is not needed on shutdown, as it will be cleaned up along with the OpenGL context.
+    pub fn drop(&self, gl: &glow::Context) {
+        self.vao.drop(gl);
+        self.vbo.drop(gl);
     }
 }

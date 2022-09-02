@@ -1,148 +1,47 @@
-use crate::{
-    gui::{gui_renderer::GuiRenderer, Button, Label, TextField},
-    GameContext,
-};
+use crate::GameContext;
 use gamework::*;
-use log::*;
 
-pub struct SettingsState {
-    gui: Gui<GuiRenderer>,
-    render_distance_textfield: WidgetId,
-    back_button: WidgetId,
-}
+pub struct SettingsState {}
 
 impl SettingsState {
     pub fn new() -> Self {
-        let mut gui = Gui::new(
-            vec![
-                flex_col(1.0),
-                fixed_col(200.0),
-                fixed_col(400.0),
-                flex_col(1.0),
-            ],
-            vec![
-                flex_row(1.0),
-                fixed_row(50.0),
-                fixed_row(50.0),
-                fixed_row(10.0),
-                fixed_row(50.0),
-                flex_row(1.0),
-            ],
-        );
-        gui.place(
-            gui.root_id(),
-            2,
-            1,
-            Box::new(Label::new("Settings".to_string())),
-            CellAlignment::Center,
-        );
-        gui.place(
-            gui.root_id(),
-            1,
-            2,
-            Box::new(Label::new("Render range (chunks): ".to_string())),
-            CellAlignment::Right,
-        );
-        let render_distance_textfield = gui.place(
-            gui.root_id(),
-            2,
-            2,
-            Box::new(TextField::new("".to_string(), 3)),
-            CellAlignment::Fill,
-        );
-        let buttons = gui.grid(
-            gui.root_id(),
-            2,
-            5,
-            vec![flex_col(1.0), flex_col(1.0)],
-            vec![fixed_row(50.0)],
-        );
-        let back_button = gui.place(
-            buttons,
-            0,
-            0,
-            Box::new(Button::new("Back".to_string())),
-            CellAlignment::Fill,
-        );
-
-        SettingsState {
-            gui,
-            render_distance_textfield,
-            back_button,
-        }
+        SettingsState {}
     }
 }
 
 impl State<GameContext> for SettingsState {
-    fn initialize(&mut self, data: &mut GameContext, _context: &mut SystemContext) {
-        self.gui.set_value(
-            &self.render_distance_textfield,
-            GuiValue::String(data.config.render_range_chunks.to_string()),
-        );
-    }
+    fn initialize(&mut self, _data: &mut GameContext, _context: &mut SystemContext) {}
 
     fn update(
         &mut self,
         _delta: f32,
         data: &mut GameContext,
-        input_events: &Vec<InputEvent>,
-        context: &mut SystemContext,
+        gui: &egui::Context,
+        _input_events: &Vec<InputEvent>,
+        _context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
-        for event in input_events {
-            match event {
-                InputEvent::KeyPress { key, .. } => match key {
-                    Key::Tab => {
-                        return StateCommand::CloseState;
+        let mut state_command = StateCommand::None;
+        egui::CentralPanel::default().show(gui, |ui| {
+            ui.with_layout(
+                egui::Layout::top_down_justified(egui::Align::Center),
+                |ui| {
+                    ui.heading("Settings");
+                    ui.add(
+                        egui::Slider::new(&mut data.config.render_range_chunks, 4..=128)
+                            .text("Render distance"),
+                    );
+                    if ui.button("Back").clicked() {
+                        state_command = StateCommand::CloseState;
                     }
-                    _ => {}
                 },
-                _ => {}
-            }
-        }
-        let gui_events = self.gui.update(
-            input_events,
-            context.video().screen_size(),
-            data.gui_renderer_mut(),
-        );
-        for event in gui_events {
-            match event {
-                GuiEvent::ButtonClicked { widget_id } => {
-                    context.audio_mut().play_sound("click");
-                    if widget_id == self.back_button {
-                        let distance_string =
-                            match self.gui.get_value(&self.render_distance_textfield) {
-                                GuiValue::String(distance_string) => distance_string,
-                                _ => panic!("Unexpected value type for textfield"),
-                            };
-                        match distance_string.parse::<u16>() {
-                            Ok(distance) => {
-                                if distance >= 4 && distance <= 512 {
-                                    data.config.render_range_chunks = distance;
-                                    data.config.save();
-                                    return StateCommand::CloseState;
-                                }
-                            }
-                            _ => {
-                                warn!("Could not parse seed value as u32");
-                            }
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-        StateCommand::None
+            );
+        });
+        state_command
     }
 
-    fn resize(&mut self, data: &mut GameContext, context: &mut SystemContext) {
-        data.gui_renderer_mut()
-            .resize(context.video().screen_size());
-    }
+    fn resize(&mut self, _data: &mut GameContext, _context: &mut SystemContext) {}
 
-    fn render(&mut self, data: &mut GameContext, _context: &mut SystemContext) {
-        self.gui.paint(data.gui_renderer_mut());
-        data.gui_renderer_mut().render();
-    }
+    fn render(&mut self, _data: &mut GameContext, _context: &mut SystemContext) {}
 
     fn shutdown(&mut self) {}
 }

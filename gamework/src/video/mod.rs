@@ -3,38 +3,37 @@ mod camera;
 pub mod color;
 pub mod data;
 mod framebuffer;
-mod gl_utils;
 mod mesh;
+mod particles;
 mod primitive_render;
 mod shader;
 mod sprite_batcher;
-mod text;
 mod texture;
 mod texture_array;
 mod texture_atlas;
-mod particles;
+
+use std::sync::Arc;
 
 pub use buffer::*;
 pub use camera::*;
 use color::ColorRGB;
-pub use framebuffer::FrameBuffer;
-pub use gl;
-pub use gl_utils::GlUtils;
+pub use data::*;
+pub use framebuffer::FBO;
+pub use glow::*;
 pub use mesh::{Mesh, Vertex};
+pub use particles::*;
 pub use primitive_render::PrimitiveRender;
 pub use render_derive::VertexAttribPointers;
-pub use shader::{Program, Uniform};
+pub use shader::ShaderProgram;
 pub use sprite_batcher::SpriteBatcher;
-pub use text::{Text, TextAlignment};
 pub use texture::*;
 pub use texture_array::TextureArray;
 pub use texture_atlas::*;
-pub use particles::*;
 
 use crate::Size;
 
 pub struct Video {
-    gl: gl::Gl,
+    gl: Arc<glow::Context>,
     ui_camera: OrthographicCamera,
     width: u32,
     height: u32,
@@ -43,9 +42,9 @@ pub struct Video {
 }
 
 impl Video {
-    pub fn new(gl: gl::Gl, width: u32, height: u32, dpi: f32) -> Video {
+    pub fn new(gl: Arc<glow::Context>, width: u32, height: u32, dpi: f32) -> Video {
         unsafe {
-            gl.Viewport(0, 0, width as i32, height as i32);
+            gl.viewport(0, 0, width as i32, height as i32);
         }
 
         // Create an orthographic camera for use in GUI
@@ -65,7 +64,7 @@ impl Video {
         self.width = width;
         self.height = height;
         unsafe {
-            self.gl.Viewport(0, 0, width as i32, height as i32);
+            self.gl.viewport(0, 0, width as i32, height as i32);
         }
         self.ui_camera.set_size(self.width, self.height);
     }
@@ -90,18 +89,23 @@ impl Video {
         self.dpi
     }
 
-    /// Get a reference to the OpenGl context
-    pub fn gl(&self) -> &gl::Gl {
+    /// Get a reference to the Glow OpenGl context
+    pub fn gl(&self) -> &glow::Context {
         &self.gl
     }
 
     /// Clear the screen
     pub fn clear_screen(&self) {
-        self.gl.clear(
-            self.background_color.r,
-            self.background_color.g,
-            self.background_color.b,
-        );
+        unsafe {
+            self.gl.clear_color(
+                self.background_color.r,
+                self.background_color.g,
+                self.background_color.b,
+                1.0,
+            );
+            self.gl
+                .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+        }
     }
 
     pub fn ui_camera(&self) -> &OrthographicCamera {

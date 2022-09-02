@@ -7,6 +7,7 @@ pub trait State<GameContext: SharedContext> {
         &mut self,
         delta: f32,
         data: &mut GameContext,
+        gui: &egui::Context,
         input_events: &Vec<InputEvent>,
         context: &mut SystemContext,
     ) -> StateCommand<GameContext>;

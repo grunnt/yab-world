@@ -1,52 +1,52 @@
 use glm::Mat4;
 
-use crate::gl;
 use crate::video::color::*;
 use crate::video::*;
 use crate::*;
 
 pub struct SpriteBatcher {
-    gl: gl::Gl,
-    program: Program,
-    projection_uniform: Option<Uniform>,
-    vbo: ArrayBuffer,
-    vao: VertexArray,
+    program: ShaderProgram,
+    projection_uniform: Option<UniformLocation>,
+    vbo: VBO,
+    vao: VAO,
     vertices: Vec<Vertex>,
-    capacity: usize,
     texture: TextureAtlas,
 }
 
 impl SpriteBatcher {
     pub fn new(
-        gl: &gl::Gl,
+        gl: &glow::Context,
         assets: &Assets,
-        shader_files: Vec<&str>,
+        vertex_shader_file: &str,
+        fragment_shader_file: &str,
         texture: TextureAtlas,
     ) -> Self {
-        let capacity = 512;
-        let program = Program::load(gl, assets, shader_files, "spritebatcher".to_string()).unwrap();
-        program.set_used();
-        let projection_uniform = program.get_uniform("projection");
-        if let Some(uniform) = program.get_uniform("textureAtlas") {
-            uniform.set_uniform_1i(0);
+        let program = ShaderProgram::load(
+            gl,
+            assets,
+            vertex_shader_file,
+            fragment_shader_file,
+            "spritebatcher".to_string(),
+        )
+        .unwrap();
+        program.set_used(gl);
+        let projection_uniform = program.get_uniform(gl, "projection");
+        if let Some(uniform) = program.get_uniform(gl, "textureAtlas") {
+            program.set_uniform_1i(gl, &uniform, 0);
         }
         // Vertex array and object
-        let vbo = ArrayBuffer::new(gl);
-        let vao = VertexArray::new(gl);
-        vao.bind();
-        vbo.bind();
+        let vbo = VBO::new(gl);
+        let vao = VAO::new(gl);
+        vao.bind(gl);
+        vbo.bind(gl);
         Vertex::vertex_attrib_pointers(gl);
-        // Reserve space in the vbo
-        vbo.stream_draw_data_null::<Vertex>(capacity);
 
         SpriteBatcher {
-            gl: gl.clone(),
             program,
             projection_uniform,
             vbo,
             vao,
             vertices: Vec::new(),
-            capacity,
             texture,
         }
     }
@@ -132,44 +132,45 @@ impl SpriteBatcher {
         self.vertices.push(v3);
     }
 
-    pub fn draw(&mut self, projection: &Mat4) {
+    pub fn draw(&mut self, gl: &glow::Context, projection: &Mat4) {
         if self.vertices.is_empty() {
             return;
         }
 
-        self.vbo.bind();
+        self.vbo.bind(gl);
         // Increase buffer size if needed
-        if self.vertices.len() > self.capacity {
-            self.capacity = self.vertices.len() * 2;
-            self.vbo.stream_draw_data_null::<Vertex>(self.capacity);
-        }
+        // TODO fix if needed
+        // if self.vertices.len() > self.capacity {
+        //     self.capacity = self.vertices.len() * 2;
+        //     self.vbo.stream_draw_data_null::<Vertex>(self.capacity);
+        // }
         // Upload the vertices
-        unsafe {
-            if let Some(mut buffer) = self
-                .vbo
-                .map_buffer_range_write_invalidate::<Vertex>(0, self.vertices.len())
-            {
-                for i in 0..self.vertices.len() {
-                    *buffer.get_unchecked_mut(i) = self.vertices.get(i).unwrap().clone();
-                }
-            }
-        }
-        self.vbo.unbind();
+        // unsafe {
+        // if let Some(mut buffer) = self
+        //     .vbo
+        //     .map_buffer_range_write_invalidate::<Vertex>(0, self.vertices.len())
+        // {
+        //     for i in 0..self.vertices.len() {
+        //         *buffer.get_unchecked_mut(i) = self.vertices.get(i).unwrap().clone();
+        //     }
+        // }
+        // }
+        self.vbo.stream_draw_data(gl, &self.vertices);
+        self.vbo.unbind(gl);
 
         // Render the sprites
-        self.program.set_used();
+        self.program.set_used(gl);
         if let Some(uniform) = &self.projection_uniform {
-            uniform.set_uniform_matrix_4fv(projection);
+            self.program.set_uniform_matrix_4fv(gl, uniform, projection);
         }
-        self.vao.bind();
-        self.texture.texture().bind_at(0);
+        self.vao.bind(gl);
+        self.texture.texture().bind_at(gl, 0);
         unsafe {
-            self.gl.Enable(gl::CULL_FACE);
-            self.gl.Disable(gl::DEPTH_TEST);
-            self.gl.Enable(gl::BLEND);
-            self.gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-            self.gl
-                .DrawArrays(gl::TRIANGLES, 0, self.vertices.len() as gl::types::GLsizei);
+            gl.enable(glow::CULL_FACE);
+            gl.disable(glow::DEPTH_TEST);
+            gl.enable(glow::BLEND);
+            gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA);
+            gl.draw_arrays(glow::TRIANGLES, 0, self.vertices.len() as i32);
         }
 
         // Clear the vertex buffer for the next frame

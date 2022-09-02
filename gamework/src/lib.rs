@@ -1,6 +1,7 @@
 mod app;
 mod assets;
-pub mod audio;
+// pub mod audio;
+// pub mod egui_glow;
 mod flat_grid;
 mod gui;
 mod input;
@@ -14,7 +15,7 @@ extern crate nalgebra_glm as glm;
 pub use app::App;
 pub use assets::Assets;
 pub use flat_grid::*;
-pub use gl;
+pub use glow;
 pub use gui::*;
 pub use input::*;
 use noise::*;

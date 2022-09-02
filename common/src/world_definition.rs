@@ -8,13 +8,13 @@ use crate::world_type::GeneratorType;
 
 pub const WORLD_DEF_FILE: &str = "world.json";
 
-pub struct WorldList {
+pub struct WorldsStore {
     store_path: PathBuf,
 }
 
-impl WorldList {
+impl WorldsStore {
     pub fn new() -> Self {
-        WorldList {
+        WorldsStore {
             store_path: PathBuf::from("worlds"),
         }
     }

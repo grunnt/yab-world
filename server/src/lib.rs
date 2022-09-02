@@ -8,7 +8,7 @@ pub mod world_store;
 extern crate nalgebra_glm as glm;
 
 use client::*;
-use common::world_definition::WorldList;
+use common::world_definition::WorldsStore;
 use common::world_type::GeneratorType;
 use common::{block::BlockRegistry, comms::*};
 use common::{block::*, daynight::DayNight};
@@ -51,14 +51,18 @@ impl YabServer {
         let handle = Builder::new()
             .name("yab-world-server".to_string())
             .spawn(move || {
-                let world_list = WorldList::new();
+                let world_list = WorldsStore::new();
                 let world_folder = world_list.get_world_path(seed);
+                // TODO fix dynamic loading of blocks json (from world folder if present, otherwise default)
+                // Also make sure its copied to assets folder (better yet, place it there?)
                 let data_path = if world_folder.exists() {
                     world_folder.clone()
                 } else { 
                     PathBuf::from("server_data") 
                 };
-                let block_registry = BlockRegistry::load_or_create(&data_path);
+                let block_registry = BlockRegistry::load_or_create(&PathBuf::from("server_data") );
+                debug!("Server block registry contains {} blocks", block_registry.all_blocks().len());
+
                 let mut world = if world_folder.exists() {
                     ServerWorldHandler::load(seed, &block_registry)
                 } else {

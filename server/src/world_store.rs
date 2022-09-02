@@ -21,7 +21,7 @@ pub struct WorldStore {
 
 impl WorldStore {
     pub fn new(seed: u32, description: &str, world_type: GeneratorType) -> Self {
-        let world_list = WorldList::new();
+        let world_list = WorldsStore::new();
         let world_folder = world_list.get_world_path(seed);
         WorldStore {
             last_save: Instant::now(),
@@ -33,7 +33,7 @@ impl WorldStore {
     }
 
     pub fn load(seed: u32) -> Option<Self> {
-        let world_list = WorldList::new();
+        let world_list = WorldsStore::new();
         let world_folder = world_list.get_world_path(seed);
         if let Some(world_def) = world_list.try_load_world(seed) {
             Some(WorldStore {

@@ -1,15 +1,15 @@
+use std::sync::Arc;
+
 use crate::profile::Profile;
+use crate::video::*;
 use crate::*;
-use crate::{audio::*, video::*};
-use gl;
-use log::*;
 
 pub const PROFILE_SAMPLES: usize = 300;
 
 pub struct SystemContext {
     video: Video,
     assets: Assets,
-    audio: AudioOutput,
+    // audio: AudioOutput,
     input: Input,
     frame_profile: Profile,
     render_profile: Profile,
@@ -18,16 +18,20 @@ pub struct SystemContext {
 }
 
 impl SystemContext {
-    pub fn new(gl: &gl::Gl, width: u32, height: u32, dpi: f32, assets: &Assets) -> SystemContext {
+    pub fn new(
+        gl: Arc<glow::Context>,
+        width: u32,
+        height: u32,
+        dpi: f32,
+        assets: &Assets,
+    ) -> SystemContext {
         // Initialize audio and video subsystem
-        let video = Video::new(gl.clone(), width, height, dpi);
-        let audio = AudioOutput::default();
-
-        info!("Context initialization complete");
+        let video = Video::new(gl, width, height, dpi);
+        // let audio = AudioOutput::default();
         SystemContext {
             video,
             assets: assets.clone(),
-            audio,
+            // audio,
             input: Input::new(),
             frame_profile: Profile::new(PROFILE_SAMPLES),
             render_profile: Profile::new(PROFILE_SAMPLES),
@@ -44,9 +48,13 @@ impl SystemContext {
         &self.video
     }
 
-    pub fn audio_mut(&mut self) -> &mut AudioOutput {
-        &mut self.audio
-    }
+    // pub fn audio_mut(&mut self) -> &mut AudioOutput {
+    //     &mut self.audio
+    // }
+
+    // pub fn play_sound(&mut self, sound: &AudioSource) {
+    //     self.audio.play_source(sound);
+    // }
 
     pub fn assets(&self) -> &Assets {
         &self.assets
@@ -58,10 +66,6 @@ impl SystemContext {
 
     pub fn input(&self) -> &Input {
         &self.input
-    }
-
-    pub fn play_sound(&mut self, sound: &AudioSource) {
-        self.audio.play_source(sound);
     }
 
     pub fn frame_profile_mut(&mut self) -> &mut Profile {

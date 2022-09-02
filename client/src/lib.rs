@@ -1,7 +1,6 @@
 mod block_select;
 mod client_config;
 mod game_context;
-pub mod gui;
 mod in_game;
 mod join_game;
 mod load_game;
@@ -20,7 +19,8 @@ use common::comms::*;
 use common::world_definition::*;
 use common::world_type::GeneratorType;
 use game_context::GameContext;
-pub use gamework::gl;
+pub use gamework::glow;
+use gamework::video::color::ColorRGB;
 use gamework::*;
 use log::*;
 use main_menu::*;
@@ -80,7 +80,7 @@ impl YabClient {
                 Box::new(StartGameState::new())
             }
             StartMode::Continue => {
-                let worlds = WorldList::new();
+                let worlds = WorldsStore::new();
                 let world_list = worlds.list_worlds();
                 if world_list.is_empty() {
                     panic!("No saved world to continue");
@@ -116,11 +116,14 @@ impl YabClient {
 }
 
 fn setup(_game: &mut GameContext, system: &mut SystemContext) {
-    let sounds = vec!["click", "step", "jump", "build", "splash"];
-    for sound in &sounds {
-        let path = system
-            .assets()
-            .assets_path(format!("sounds/{}.wav", sound).as_str());
-        system.audio_mut().load_sound(&path);
-    }
+    system
+        .video_mut()
+        .set_background_color(&ColorRGB::new(0.1, 0.1, 0.1));
+    // let sounds = vec!["click", "step", "jump", "build", "splash"];
+    // for sound in &sounds {
+    //     let path = system
+    //         .assets()
+    //         .assets_path(format!("sounds/{}.wav", sound).as_str());
+    //     system.audio_mut().load_sound(&path);
+    // }
 }

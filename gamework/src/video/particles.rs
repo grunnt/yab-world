@@ -9,13 +9,12 @@ pub type EmitterHandle = usize;
 
 pub struct ParticleSystem {
     texture: TextureArray,
-    gl: gl::Gl,
-    program: Program,
-    projection_uniform: Uniform,
-    view_uniform: Uniform,
-    viewport_height_uniform: Uniform,
-    vbo: ArrayBuffer,
-    vao: VertexArray,
+    program: ShaderProgram,
+    projection_uniform: UniformLocation,
+    view_uniform: UniformLocation,
+    viewport_height_uniform: UniformLocation,
+    vbo: VBO,
+    vao: VAO,
     vertices: Vec<ParticleVertex>,
     particles: Vec<Particle>,
     emitters: HashMap<EmitterHandle, Emitter>,
@@ -27,31 +26,31 @@ pub struct ParticleSystem {
 }
 
 impl ParticleSystem {
-    pub fn new(gl: &gl::Gl, assets: &Assets, texture: TextureArray) -> Self {
-        let program = Program::load(
+    pub fn new(gl: &glow::Context, assets: &Assets, texture: TextureArray) -> Self {
+        let program = ShaderProgram::load(
             gl,
             assets,
-            vec!["shaders/particle.vert", "shaders/particle.frag"],
+            "shaders/particle.vert",
+            "shaders/particle.frag",
             "particle".to_string(),
         )
         .unwrap();
 
-        program.set_used();
-        let projection_uniform = program.get_uniform("projection").unwrap();
-        let view_uniform = program.get_uniform("view").unwrap();
-        let viewport_height_uniform = program.get_uniform("viewport_height").unwrap();
-        if let Some(uniform) = program.get_uniform("textures") {
-            uniform.set_uniform_1i(0);
+        program.set_used(gl);
+        let projection_uniform = program.get_uniform(gl, "projection").unwrap();
+        let view_uniform = program.get_uniform(gl, "view").unwrap();
+        let viewport_height_uniform = program.get_uniform(gl, "viewport_height").unwrap();
+        if let Some(uniform) = program.get_uniform(gl, "textures") {
+            program.set_uniform_1i(gl, &uniform, 0);
         }
         // Vertex array and object
-        let vbo = ArrayBuffer::new(gl);
-        let vao = VertexArray::new(gl);
-        vao.bind();
-        vbo.bind();
+        let vbo = VBO::new(gl);
+        let vao = VAO::new(gl);
+        vao.bind(gl);
+        vbo.bind(gl);
         ParticleVertex::vertex_attrib_pointers(gl);
 
         ParticleSystem {
-            gl: gl.clone(),
             program,
             projection_uniform,
             view_uniform,
@@ -220,7 +219,13 @@ impl ParticleSystem {
             .retain(|_, e| e.definition.continuous || e.life_time_s > 0.0);
     }
 
-    pub fn draw(&mut self, view: &Mat4, projection: &Mat4, viewport_height: f32) {
+    pub fn draw(
+        &mut self,
+        gl: &glow::Context,
+        view: &Mat4,
+        projection: &Mat4,
+        viewport_height: f32,
+    ) {
         // Generate vertices for the particles
         for particle in &self.particles {
             self.vertices.push(ParticleVertex::new(
@@ -238,26 +243,30 @@ impl ParticleSystem {
         }
 
         // Upload the vertices
-        self.vbo.bind();
+        self.vbo.bind(gl);
+        // TODO set to null
+        // self.vbo
+        //     .stream_draw_data_null::<ParticleVertex>(self.vertices.len());
         self.vbo
-            .stream_draw_data_null::<ParticleVertex>(self.vertices.len());
-        self.vbo.stream_draw_data::<ParticleVertex>(&self.vertices);
-        self.vbo.unbind();
+            .stream_draw_data::<ParticleVertex>(gl, &self.vertices);
+        self.vbo.unbind(gl);
 
         // Render the particles
-        self.program.set_used();
-        self.view_uniform.set_uniform_matrix_4fv(view);
-        self.projection_uniform.set_uniform_matrix_4fv(projection);
-        self.viewport_height_uniform.set_uniform_1f(viewport_height);
-        self.vao.bind();
-        self.texture.texture().bind_at(0);
+        self.program.set_used(gl);
+        self.program
+            .set_uniform_matrix_4fv(gl, &self.view_uniform, view);
+        self.program
+            .set_uniform_matrix_4fv(gl, &self.projection_uniform, projection);
+        self.program
+            .set_uniform_1f(gl, &self.viewport_height_uniform, viewport_height);
+        self.vao.bind(gl);
+        self.texture.texture().bind_at(gl, 0);
         unsafe {
-            self.gl.Enable(gl::DEPTH_TEST);
-            self.gl.Enable(gl::BLEND);
-            self.gl.Enable(gl::VERTEX_PROGRAM_POINT_SIZE);
-            self.gl.BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
-            self.gl
-                .DrawArrays(gl::POINTS, 0, self.vertices.len() as gl::types::GLsizei);
+            gl.enable(glow::DEPTH_TEST);
+            gl.enable(glow::BLEND);
+            gl.enable(glow::VERTEX_PROGRAM_POINT_SIZE);
+            gl.blend_func(glow::ONE, glow::ONE_MINUS_SRC_ALPHA);
+            gl.draw_arrays(glow::POINTS, 0, self.vertices.len() as i32);
         }
 
         // Clear the vertex buffer for the next frame

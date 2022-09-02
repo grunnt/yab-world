@@ -1,64 +1,52 @@
-use crate::render::mesh::{Mesh, Vertex};
 use failure;
+use gamework::glow::*;
 use gamework::video::*;
 use gamework::*;
-use gl;
 use nalgebra_glm::*;
 pub struct Crosshair {
-    gl: gl::Gl,
-    program: Program,
-    model_uniform: Option<Uniform>,
-    view_uniform: Option<Uniform>,
-    projection_uniform: Option<Uniform>,
+    program: ShaderProgram,
+    model_uniform: Option<UniformLocation>,
+    view_uniform: Option<UniformLocation>,
+    projection_uniform: Option<UniformLocation>,
     mesh: Mesh,
 }
 
 impl Crosshair {
-    pub fn new(gl: &gl::Gl, assets: &Assets) -> Result<Crosshair, failure::Error> {
-        let program = Program::load(
+    pub fn new(gl: &glow::Context, assets: &Assets) -> Result<Crosshair, failure::Error> {
+        let program = ShaderProgram::load(
             gl,
             assets,
-            vec!["shaders/simple.vert", "shaders/simple.frag"],
+            "shaders/simple.vert",
+            "shaders/simple.frag",
             "simple".to_string(),
         )?;
-        program.set_used();
-        let model_uniform = program.get_uniform("Model");
-        let view_uniform = program.get_uniform("View");
-        let projection_uniform = program.get_uniform("Projection");
+        program.set_used(gl);
+        let model_uniform = program.get_uniform(gl, "Model");
+        let view_uniform = program.get_uniform(gl, "View");
+        let projection_uniform = program.get_uniform(gl, "Projection");
         let mut vertices = Vec::new();
         let color = (1.0, 1.0, 1.0).into();
-        let normal = (0.0, 0.0, 0.0).into();
         let size = 10.0;
-        let lights = (1.0, 1.0, 0.0).into();
 
         vertices.push(Vertex {
             position: (-size, 0.0, 0.0).into(),
             color,
-            normal,
-            lights,
         });
         vertices.push(Vertex {
             position: (size, 0.0, 0.0).into(),
             color,
-            normal,
-            lights,
         });
         vertices.push(Vertex {
             position: (0.0, -size, 0.0).into(),
             color,
-            normal,
-            lights,
         });
         vertices.push(Vertex {
             position: (0.0, size, 0.0).into(),
             color,
-            normal,
-            lights,
         });
 
-        let mesh = Mesh::new(gl, &vertices).unwrap();
+        let mesh = Mesh::new(gl, &vertices);
         Ok(Crosshair {
-            gl: gl.clone(),
             mesh,
             program,
             model_uniform,
@@ -67,22 +55,24 @@ impl Crosshair {
         })
     }
 
-    pub fn render(&self, model: Mat4, camera: &OrthographicCamera) {
-        self.program.set_used();
+    pub fn render(&self, gl: &glow::Context, model: Mat4, camera: &OrthographicCamera) {
+        self.program.set_used(gl);
         if let Some(uniform) = &self.model_uniform {
-            uniform.set_uniform_matrix_4fv(&model);
+            self.program.set_uniform_matrix_4fv(gl, &uniform, &model);
         }
         if let Some(uniform) = &self.view_uniform {
-            uniform.set_uniform_matrix_4fv(&Mat4::identity());
+            self.program
+                .set_uniform_matrix_4fv(gl, &uniform, &Mat4::identity());
         }
         if let Some(uniform) = &self.projection_uniform {
-            uniform.set_uniform_matrix_4fv(camera.get_projection());
+            self.program
+                .set_uniform_matrix_4fv(gl, &uniform, camera.get_projection());
         }
         unsafe {
-            self.gl.Disable(gl::CULL_FACE);
-            self.gl.Disable(gl::DEPTH_TEST);
-            self.gl.Disable(gl::BLEND);
+            gl.disable(glow::CULL_FACE);
+            gl.disable(glow::DEPTH_TEST);
+            gl.disable(glow::BLEND);
         }
-        self.mesh.render_lines(&self.gl);
+        self.mesh.render_lines(&gl);
     }
 }

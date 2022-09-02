@@ -1,7 +1,7 @@
+use crate::client_config::ClientConfig;
 use crate::render::BlockRenderer;
 use crate::world::worldhandler::WorldHandler;
 use crate::*;
-use crate::{client_config::ClientConfig, gui::gui_renderer::GuiRenderer};
 use common::block::*;
 use common::comms::*;
 use common::daynight::DayNight;
@@ -15,7 +15,6 @@ use std::sync::mpsc::Receiver;
 pub struct GameContext {
     pub world: Option<WorldHandler>,
     pub block_renderer: Option<BlockRenderer>,
-    pub gui_renderer: Option<GuiRenderer>,
     pub particles: Option<ParticleSystem>,
     pub dig_common_emitter: Option<EmitterDef>,
     pub dig_iron_emitter: Option<EmitterDef>,
@@ -81,7 +80,6 @@ impl GameContext {
             inventory: Inventory::new(),
             selected_block: 2,
             config: ClientConfig::load(),
-            gui_renderer: None,
             players: Vec::new(),
             last_sound_position: Vec3::zeros(),
         }
@@ -113,14 +111,6 @@ impl GameContext {
 
     pub fn particles_mut(&mut self) -> &mut ParticleSystem {
         self.particles.as_mut().unwrap()
-    }
-
-    pub fn gui_renderer(&self) -> &GuiRenderer {
-        self.gui_renderer.as_ref().unwrap()
-    }
-
-    pub fn gui_renderer_mut(&mut self) -> &mut GuiRenderer {
-        self.gui_renderer.as_mut().unwrap()
     }
 
     pub fn physics(&self) -> &Physics {
@@ -173,12 +163,6 @@ impl GameContext {
 
 impl SharedContext for GameContext {
     fn initialize(&mut self, context: &mut SystemContext) {
-        self.gui_renderer = Some(GuiRenderer::new(
-            &context.video().gl(),
-            &context.assets(),
-            context.video().width(),
-            context.video().height(),
-        ));
         let texture_array = TextureArray::load_directory(
             &context.assets().assets_path("particles"),
             TextureFormat::RGBA8,

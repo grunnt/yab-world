@@ -1,15 +1,11 @@
 #![allow(dead_code)]
 
-use crate::*;
 use failure::*;
-use gl;
+use glow::{HasContext, Texture};
 use image::GenericImageView;
 use image::{self, DynamicImage};
 use log::*;
-use std::{
-    os::raw,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Fail)]
 pub enum Error {
@@ -36,36 +32,36 @@ pub enum TextureFormat {
 }
 
 impl TextureFormat {
-    pub fn internal_format(&self) -> gl::types::GLint {
+    pub fn internal_format(&self) -> i32 {
         match self {
-            TextureFormat::R8 => gl::R8 as gl::types::GLint,
-            TextureFormat::R16 => gl::R16 as gl::types::GLint,
-            TextureFormat::RGB8 => gl::RGB8 as gl::types::GLint,
-            TextureFormat::RGBA8 => gl::RGBA8 as gl::types::GLint,
-            TextureFormat::SRGBA8 => gl::SRGB8_ALPHA8 as gl::types::GLint,
-            TextureFormat::RGBA16F => gl::RGBA16F as gl::types::GLint,
+            TextureFormat::R8 => glow::R8 as i32,
+            TextureFormat::R16 => glow::R16 as i32,
+            TextureFormat::RGB8 => glow::RGB8 as i32,
+            TextureFormat::RGBA8 => glow::RGBA8 as i32,
+            TextureFormat::SRGBA8 => glow::SRGB8_ALPHA8 as i32,
+            TextureFormat::RGBA16F => glow::RGBA16F as i32,
         }
     }
 
-    pub fn upload_format(&self) -> gl::types::GLenum {
+    pub fn upload_format(&self) -> u32 {
         match self {
-            TextureFormat::R8 => gl::RED,
-            TextureFormat::R16 => gl::RED,
-            TextureFormat::RGB8 => gl::RGB,
-            TextureFormat::RGBA8 => gl::RGBA,
-            TextureFormat::SRGBA8 => gl::RGBA,
-            TextureFormat::RGBA16F => gl::RGBA,
+            TextureFormat::R8 => glow::RED,
+            TextureFormat::R16 => glow::RED,
+            TextureFormat::RGB8 => glow::RGB,
+            TextureFormat::RGBA8 => glow::RGBA,
+            TextureFormat::SRGBA8 => glow::RGBA,
+            TextureFormat::RGBA16F => glow::RGBA,
         }
     }
 
-    pub fn upload_type(&self) -> gl::types::GLuint {
+    pub fn upload_type(&self) -> u32 {
         match self {
-            TextureFormat::R8 => gl::UNSIGNED_BYTE,
-            TextureFormat::R16 => gl::UNSIGNED_SHORT,
-            TextureFormat::RGB8 => gl::UNSIGNED_BYTE,
-            TextureFormat::RGBA8 => gl::UNSIGNED_BYTE,
-            TextureFormat::SRGBA8 => gl::UNSIGNED_BYTE,
-            TextureFormat::RGBA16F => gl::FLOAT,
+            TextureFormat::R8 => glow::UNSIGNED_BYTE,
+            TextureFormat::R16 => glow::UNSIGNED_SHORT,
+            TextureFormat::RGB8 => glow::UNSIGNED_BYTE,
+            TextureFormat::RGBA8 => glow::UNSIGNED_BYTE,
+            TextureFormat::SRGBA8 => glow::UNSIGNED_BYTE,
+            TextureFormat::RGBA16F => glow::FLOAT,
         }
     }
 
@@ -90,21 +86,21 @@ pub enum TextureFilter {
 }
 
 impl TextureFilter {
-    pub fn min_filter(&self) -> gl::types::GLint {
+    pub fn min_filter(&self) -> i32 {
         match self {
-            TextureFilter::Linear => gl::LINEAR as gl::types::GLint,
-            TextureFilter::Nearest => gl::NEAREST as gl::types::GLint,
-            TextureFilter::MipMapLinear => gl::LINEAR_MIPMAP_LINEAR as gl::types::GLint,
-            TextureFilter::MipMapNearest => gl::NEAREST_MIPMAP_NEAREST as gl::types::GLint,
+            TextureFilter::Linear => glow::LINEAR as i32,
+            TextureFilter::Nearest => glow::NEAREST as i32,
+            TextureFilter::MipMapLinear => glow::LINEAR_MIPMAP_LINEAR as i32,
+            TextureFilter::MipMapNearest => glow::NEAREST_MIPMAP_NEAREST as i32,
         }
     }
 
-    pub fn mag_filter(&self) -> gl::types::GLint {
+    pub fn mag_filter(&self) -> i32 {
         match self {
-            TextureFilter::Linear => gl::LINEAR as gl::types::GLint,
-            TextureFilter::Nearest => gl::NEAREST as gl::types::GLint,
-            TextureFilter::MipMapLinear => gl::LINEAR as gl::types::GLint,
-            TextureFilter::MipMapNearest => gl::NEAREST as gl::types::GLint,
+            TextureFilter::Linear => glow::LINEAR as i32,
+            TextureFilter::Nearest => glow::NEAREST as i32,
+            TextureFilter::MipMapLinear => glow::LINEAR as i32,
+            TextureFilter::MipMapNearest => glow::NEAREST as i32,
         }
     }
 }
@@ -123,17 +119,16 @@ pub enum TextureTarget {
 }
 
 impl TextureTarget {
-    pub fn target(&self) -> gl::types::GLuint {
+    pub fn target(&self) -> u32 {
         match self {
-            TextureTarget::Normal => gl::TEXTURE_2D,
-            TextureTarget::Array2D => gl::TEXTURE_2D_ARRAY,
+            TextureTarget::Normal => glow::TEXTURE_2D,
+            TextureTarget::Array2D => glow::TEXTURE_2D_ARRAY,
         }
     }
 }
 
-pub struct Texture {
-    gl: gl::Gl,
-    pub handle: gl::types::GLuint,
+pub struct MyTexture {
+    pub handle: Texture,
     target: TextureTarget,
     format: TextureFormat,
     filter: TextureFilter,
@@ -141,33 +136,32 @@ pub struct Texture {
     height: u32,
 }
 
-impl Texture {
+impl MyTexture {
     /// Create a buffer texture for attachment to a framebuffer
     pub fn new_uninitialized(
-        gl: &gl::Gl,
+        gl: &glow::Context,
         width: u32,
         height: u32,
         format: TextureFormat,
         wrap: TextureWrap,
         filter: TextureFilter,
-    ) -> Result<Texture, failure::Error> {
-        let null_pointer = 0;
+    ) -> Result<MyTexture, failure::Error> {
         let target = TextureTarget::Normal;
-        let texture = Texture::start_setup(gl, width, height, target, format, wrap, filter)?;
+        let texture = MyTexture::start_setup(gl, width, height, target, format, wrap, filter)?;
         unsafe {
-            gl.TexImage2D(
+            gl.tex_image_2d(
                 target.target(),
                 0,
                 format.internal_format(),
-                width as gl::types::GLsizei,
-                height as gl::types::GLsizei,
+                width as i32,
+                height as i32,
                 0,
                 format.upload_format(),
                 format.upload_type(),
-                null_pointer as *const std::os::raw::c_void,
+                None,
             );
         }
-        texture.finish_setup();
+        texture.finish_setup(gl);
         Ok(texture)
     }
 
@@ -178,25 +172,25 @@ impl Texture {
         format: TextureFormat,
         wrap: TextureWrap,
         filter: TextureFilter,
-        gl: &gl::Gl,
-    ) -> Result<Texture, failure::Error> {
+        gl: &glow::Context,
+    ) -> Result<MyTexture, failure::Error> {
         assert!(width * height * format.bytes_per_pixel() == buffer.len() as u32);
         let target = TextureTarget::Normal;
-        let texture = Texture::start_setup(gl, width, height, target, format, wrap, filter)?;
+        let texture = MyTexture::start_setup(gl, width, height, target, format, wrap, filter)?;
         unsafe {
-            gl.TexImage2D(
+            gl.tex_image_2d(
                 target.target(),
                 0,
                 format.internal_format(),
-                width as gl::types::GLsizei,
-                height as gl::types::GLsizei,
+                width as i32,
+                height as i32,
                 0,
                 format.upload_format(),
                 format.upload_type(),
-                buffer.as_ptr() as *const raw::c_void,
+                Some(buffer),
             );
         }
-        texture.finish_setup();
+        texture.finish_setup(gl);
         Ok(texture)
     }
 
@@ -207,46 +201,46 @@ impl Texture {
         format: TextureFormat,
         wrap: TextureWrap,
         filter: TextureFilter,
-        gl: &gl::Gl,
-    ) -> Result<Texture, failure::Error> {
+        gl: &glow::Context,
+    ) -> Result<MyTexture, failure::Error> {
         let tex: Vec<u8> = vec![0; (width * height * format.bytes_per_pixel() as u32) as usize];
         let target = TextureTarget::Normal;
-        let texture = Texture::start_setup(gl, width, height, target, format, wrap, filter)?;
+        let texture = MyTexture::start_setup(gl, width, height, target, format, wrap, filter)?;
         unsafe {
-            gl.TexImage2D(
+            gl.tex_image_2d(
                 target.target(),
                 0,
                 format.internal_format(),
-                width as gl::types::GLsizei,
-                height as gl::types::GLsizei,
+                width as i32,
+                height as i32,
                 0,
                 format.upload_format(),
                 format.upload_type(),
-                tex.as_ptr() as *const raw::c_void,
+                Some(&tex),
             );
         }
-        texture.finish_setup();
+        texture.finish_setup(gl);
         Ok(texture)
     }
 
     /// Clear and resize the texture
-    pub fn resize(&mut self, width: u32, height: u32) {
+    pub fn resize(&mut self, gl: &glow::Context, width: u32, height: u32) {
         self.width = width;
         self.height = height;
         let tex: Vec<u8> =
             vec![0; (width * height * self.format.bytes_per_pixel() as u32) as usize];
-        self.bind();
+        self.bind(gl);
         unsafe {
-            self.gl.TexImage2D(
+            gl.tex_image_2d(
                 self.target.target(),
                 0,
                 self.format.internal_format(),
-                width as gl::types::GLsizei,
-                height as gl::types::GLsizei,
+                width as i32,
+                height as i32,
                 0,
                 self.format.upload_format(),
                 self.format.upload_type(),
-                tex.as_ptr() as *const raw::c_void,
+                Some(&tex),
             );
         }
     }
@@ -254,26 +248,26 @@ impl Texture {
     /// Load a texture from disk
     pub fn load(
         path: &Path,
-        gl: &gl::Gl,
+        gl: &glow::Context,
         format: TextureFormat,
         wrap: TextureWrap,
         filter: TextureFilter,
-    ) -> Result<Texture, failure::Error> {
+    ) -> Result<MyTexture, failure::Error> {
         let image = image::open(path).map_err(|e| Error::FailedToLoadImage {
             name: path.to_str().unwrap().to_string(),
             inner: e,
         })?;
-        Texture::from_image(gl, &image, format, wrap, filter)
+        MyTexture::from_image(gl, &image, format, wrap, filter)
     }
 
     /// Load a texture from disk
     pub fn from_image(
-        gl: &gl::Gl,
+        gl: &glow::Context,
         image: &DynamicImage,
         format: TextureFormat,
         wrap: TextureWrap,
         filter: TextureFilter,
-    ) -> Result<Texture, failure::Error> {
+    ) -> Result<MyTexture, failure::Error> {
         let target = TextureTarget::Normal;
         let (img_width, img_height) = image.dimensions();
         let bytes = image.to_bytes();
@@ -281,29 +275,29 @@ impl Texture {
         assert!(bytes.len() == (img_width * img_height * format.bytes_per_pixel()) as usize);
 
         let texture =
-            Texture::start_setup(gl, img_width, img_height, target, format, wrap, filter)?;
+            MyTexture::start_setup(gl, img_width, img_height, target, format, wrap, filter)?;
 
         unsafe {
             if format.bytes_per_pixel() % 4 != 0 {
-                gl.PixelStorei(gl::UNPACK_ALIGNMENT, 1);
+                gl.pixel_store_i32(glow::UNPACK_ALIGNMENT, 1);
             }
-            gl.TexImage2D(
+            gl.tex_image_2d(
                 target.target(),
                 0,
                 format.internal_format(),
-                img_width as gl::types::GLsizei,
-                img_height as gl::types::GLsizei,
+                img_width as i32,
+                img_height as i32,
                 0,
                 format.upload_format(),
                 format.upload_type(),
-                bytes.as_ptr() as *const raw::c_void,
+                Some(&bytes),
             );
             if format.bytes_per_pixel() % 4 != 0 {
-                gl.PixelStorei(gl::UNPACK_ALIGNMENT, 4);
+                gl.pixel_store_i32(glow::UNPACK_ALIGNMENT, 4);
             }
         }
 
-        texture.finish_setup();
+        texture.finish_setup(gl);
         Ok(texture)
     }
 
@@ -314,8 +308,8 @@ impl Texture {
         format: TextureFormat,
         wrap: TextureWrap,
         filter: TextureFilter,
-        gl: &gl::Gl,
-    ) -> Result<Texture, failure::Error> {
+        gl: &glow::Context,
+    ) -> Result<MyTexture, failure::Error> {
         assert!(paths.len() > 0);
         let target = TextureTarget::Array2D;
         let mut data = Vec::new();
@@ -354,7 +348,7 @@ impl Texture {
         );
 
         let texture =
-            Texture::start_setup(gl, img_width, img_height, target, format, wrap, filter)?;
+            MyTexture::start_setup(gl, img_width, img_height, target, format, wrap, filter)?;
         assert!(
             img_width as usize
                 * img_height as usize
@@ -363,21 +357,21 @@ impl Texture {
                 == data.len()
         );
         unsafe {
-            gl.TexImage3D(
+            gl.tex_image_3d(
                 target.target(),
                 0,
                 format.internal_format(),
-                img_width as gl::types::GLsizei,
-                img_height as gl::types::GLsizei,
-                paths.len() as gl::types::GLsizei,
+                img_width as i32,
+                img_height as i32,
+                paths.len() as i32,
                 0,
                 format.upload_format(),
                 format.upload_type(),
-                data.as_ptr() as *const raw::c_void,
+                Some(&data),
             );
         }
 
-        texture.finish_setup();
+        texture.finish_setup(gl);
         Ok(texture)
     }
 
@@ -390,92 +384,122 @@ impl Texture {
     }
 
     /// Write pixels to the texture
-    pub fn write(&self, x_offset: u32, y_offset: u32, width: u32, height: u32, pixels: &[u8]) {
-        self.bind();
+    pub fn write(
+        &self,
+        gl: &glow::Context,
+        x_offset: u32,
+        y_offset: u32,
+        width: u32,
+        height: u32,
+        pixels: &[u8],
+    ) {
+        self.bind(gl);
         if self.format.bytes_per_pixel() % 4 != 0 {
             unsafe {
-                self.gl.PixelStorei(gl::UNPACK_ALIGNMENT, 1);
+                gl.pixel_store_i32(glow::UNPACK_ALIGNMENT, 1);
             }
         }
         unsafe {
-            self.gl.TexSubImage2D(
-                self.target.target(),
-                0,
-                x_offset as gl::types::GLint,
-                y_offset as gl::types::GLint,
-                width as gl::types::GLsizei,
-                height as gl::types::GLsizei,
-                self.format.upload_format(),
-                self.format.upload_type(),
-                pixels.as_ptr() as *const raw::c_void,
-            );
+            if x_offset == 0 && y_offset == 0 {
+                gl.tex_image_2d(
+                    self.target.target(),
+                    0,
+                    self.format.internal_format(),
+                    width as i32,
+                    height as i32,
+                    0,
+                    self.format.upload_format(),
+                    self.format.upload_type(),
+                    Some(pixels),
+                );
+            } else {
+                gl.tex_sub_image_2d(
+                    self.target.target(),
+                    0,
+                    x_offset as i32,
+                    y_offset as i32,
+                    width as i32,
+                    height as i32,
+                    self.format.upload_format(),
+                    self.format.upload_type(),
+                    glow::PixelUnpackData::Slice(pixels),
+                );
+            }
         }
         if self.format.bytes_per_pixel() % 4 != 0 {
             unsafe {
-                self.gl.PixelStorei(gl::UNPACK_ALIGNMENT, 4);
+                gl.pixel_store_i32(glow::UNPACK_ALIGNMENT, 4);
             }
         }
     }
 
-    pub fn bind(&self) {
+    pub fn bind(&self, gl: &glow::Context) {
         unsafe {
-            self.gl.BindTexture(self.target.target(), self.handle);
+            gl.bind_texture(self.target.target(), Some(self.handle));
         }
     }
 
-    pub fn bind_at(&self, index: u32) {
+    pub fn bind_at(&self, gl: &glow::Context, index: u32) {
         unsafe {
-            self.gl.ActiveTexture(gl::TEXTURE0 + index);
+            gl.active_texture(glow::TEXTURE0 + index);
         }
-        self.bind();
+        self.bind(gl);
     }
 
-    pub fn unbind(&self) {
+    pub fn unbind(&self, gl: &glow::Context) {
         unsafe {
-            self.gl.BindTexture(self.target.target(), 0);
+            gl.bind_texture(self.target.target(), None);
         }
     }
 
     fn start_setup(
-        gl: &gl::Gl,
+        gl: &glow::Context,
         width: u32,
         height: u32,
         target: TextureTarget,
         format: TextureFormat,
         wrap: TextureWrap,
         filter: TextureFilter,
-    ) -> Result<Texture, failure::Error> {
-        let mut handle: gl::types::GLuint = 0;
+    ) -> Result<MyTexture, failure::Error> {
+        let handle = unsafe { gl.create_texture().unwrap() };
 
         unsafe {
-            gl.GenTextures(1, &mut handle);
-            gl.BindTexture(target.target(), handle);
+            gl.bind_texture(target.target(), Some(handle));
         }
 
         let wrap_param = match wrap {
-            TextureWrap::Repeat => Some(gl::REPEAT as gl::types::GLint),
-            TextureWrap::Clamp => Some(gl::CLAMP_TO_EDGE as gl::types::GLint),
+            TextureWrap::Repeat => Some(glow::REPEAT as i32),
+            TextureWrap::Clamp => Some(glow::CLAMP_TO_EDGE as i32),
             _ => None,
         };
         if let Some(param) = wrap_param {
             unsafe {
-                gl.TexParameteri(target.target(), gl::TEXTURE_WRAP_S, param);
-                gl.TexParameteri(target.target(), gl::TEXTURE_WRAP_T, param);
-            }
-        }
-        unsafe {
-            gl.TexParameteri(target.target(), gl::TEXTURE_MIN_FILTER, filter.min_filter());
-            gl.TexParameteri(target.target(), gl::TEXTURE_MAG_FILTER, filter.mag_filter());
-        }
-        if filter != TextureFilter::MipMapLinear && filter != TextureFilter::MipMapNearest {
-            unsafe {
-                gl.TexParameteri(target.target(), gl::TEXTURE_BASE_LEVEL, 0);
-                gl.TexParameteri(target.target(), gl::TEXTURE_MAX_LEVEL, 0);
+                gl.tex_parameter_i32(target.target(), glow::TEXTURE_WRAP_S, param);
+                gl.tex_parameter_i32(target.target(), glow::TEXTURE_WRAP_T, param);
             }
         }
 
-        Ok(Texture {
-            gl: gl.clone(),
+        unsafe {
+            gl.tex_parameter_i32(
+                target.target(),
+                glow::TEXTURE_MIN_FILTER,
+                filter.min_filter(),
+            );
+            gl.tex_parameter_i32(
+                target.target(),
+                glow::TEXTURE_MAG_FILTER,
+                filter.mag_filter(),
+            );
+        }
+
+        if filter != TextureFilter::MipMapLinear && filter != TextureFilter::MipMapNearest {
+            unsafe {
+                gl.tex_parameter_i32(target.target(), glow::TEXTURE_BASE_LEVEL, 0);
+                gl.tex_parameter_i32(target.target(), glow::TEXTURE_MAX_LEVEL, 0);
+            }
+        }
+
+        Ok(MyTexture {
             handle,
             target,
             format,
@@ -485,21 +509,19 @@ impl Texture {
         })
     }
 
-    fn finish_setup(&self) {
+    fn finish_setup(&self, gl: &glow::Context) {
         if self.filter == TextureFilter::MipMapLinear || self.filter == TextureFilter::MipMapNearest
         {
             unsafe {
-                self.gl.GenerateMipmap(self.target.target());
+                gl.generate_mipmap(self.target.target());
             }
         }
         unsafe {
-            self.gl.BindTexture(self.target.target(), 0);
+            gl.bind_texture(self.target.target(), None);
         }
     }
-}
 
-impl Drop for Texture {
-    fn drop(&mut self) {
-        unsafe { self.gl.DeleteTextures(1, &mut self.handle) };
+    pub fn destroy(&self, gl: &glow::Context) {
+        unsafe { gl.delete_texture(self.handle) };
     }
 }

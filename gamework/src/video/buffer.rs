@@ -1,263 +1,147 @@
-use gl;
+use glow::*;
 
-pub trait BufferType {
-    const BUFFER_TYPE: gl::types::GLuint;
+pub struct VBO {
+    vbo: Buffer,
 }
 
-pub struct BufferTypeArray;
-impl BufferType for BufferTypeArray {
-    const BUFFER_TYPE: gl::types::GLuint = gl::ARRAY_BUFFER;
+impl VBO {
+    pub fn new(gl: &glow::Context) -> Self {
+        let vbo = unsafe { gl.create_buffer().unwrap() };
+        VBO { vbo }
+    }
+
+    pub fn bind(&self, gl: &glow::Context) {
+        unsafe {
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.vbo));
+        }
+    }
+
+    pub fn static_draw_data<T>(&self, gl: &glow::Context, data: &[T]) {
+        unsafe {
+            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, to_byte_slice(data), glow::STATIC_DRAW);
+        }
+    }
+
+    pub fn dynamic_draw_data<T>(&self, gl: &glow::Context, data: &[T]) {
+        unsafe {
+            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, to_byte_slice(data), glow::DYNAMIC_DRAW);
+        }
+    }
+
+    pub fn stream_draw_data<T>(&self, gl: &glow::Context, data: &[T]) {
+        unsafe {
+            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, to_byte_slice(data), glow::STREAM_DRAW);
+        }
+    }
+
+    pub fn unbind(&self, gl: &glow::Context) {
+        unsafe {
+            gl.bind_buffer(glow::ARRAY_BUFFER, None);
+        }
+    }
+
+    /// Drop the buffer. This is not needed on shutdown, as it will be cleaned up along with the OpenGL context.
+    pub fn drop(&self, gl: &glow::Context) {
+        unsafe {
+            gl.delete_buffer(self.vbo);
+        }
+    }
 }
 
-pub struct BufferTypeElementArray;
-impl BufferType for BufferTypeElementArray {
-    const BUFFER_TYPE: gl::types::GLuint = gl::ELEMENT_ARRAY_BUFFER;
+pub struct EBO {
+    ebo: Buffer,
 }
 
-pub struct Buffer<B>
-where
-    B: BufferType,
-{
-    gl: gl::Gl,
-    vbo: gl::types::GLuint,
-    _marker: ::std::marker::PhantomData<B>,
-    fence_opt: Option<gl::types::GLsync>,
-}
+impl EBO {
+    pub fn new(gl: &glow::Context) -> Self {
+        let ebo = unsafe { gl.create_buffer().unwrap() };
+        EBO { ebo }
+    }
 
-#[allow(dead_code)]
-impl<B> Buffer<B>
-where
-    B: BufferType,
-{
-    pub fn new(gl: &gl::Gl) -> Buffer<B> {
-        let mut vbo: gl::types::GLuint = 0;
+    pub fn bind(&self, gl: &glow::Context) {
         unsafe {
-            gl.GenBuffers(1, &mut vbo);
-        }
-
-        Buffer {
-            gl: gl.clone(),
-            vbo,
-            _marker: ::std::marker::PhantomData,
-            fence_opt: None,
+            gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.ebo));
         }
     }
 
-    pub fn bind(&self) {
+    pub fn static_draw_data<T>(&self, gl: &glow::Context, data: &[T]) {
         unsafe {
-            self.gl.BindBuffer(B::BUFFER_TYPE, self.vbo);
-        }
-    }
-
-    pub fn unbind(&self) {
-        unsafe {
-            self.gl.BindBuffer(B::BUFFER_TYPE, 0);
-        }
-    }
-
-    pub fn map_buffer_data(&mut self) {
-        /*
-        An alternative that works with a single context is to glMapBuffer in the render thread and pass the pointer to the worker thread. Then, upon completion (signalling a semaphore, for example), glUnmapBuffer, again in the render thread.
-        */
-
-        unsafe {
-            self.gl.MapBuffer(
-                B::BUFFER_TYPE,                                   // target
-                gl::MAP_WRITE_BIT | gl::MAP_INVALIDATE_RANGE_BIT, // usage
-            );
-            self.gl.UnmapBuffer(B::BUFFER_TYPE);
-        }
-    }
-
-    pub fn static_draw_data<T>(&mut self, data: &[T], insert_fence: bool) {
-        unsafe {
-            self.gl.BufferData(
-                B::BUFFER_TYPE,                                                     // target
-                (data.len() * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // size of data in bytes
-                data.as_ptr() as *const gl::types::GLvoid, // pointer to data
-                gl::STATIC_DRAW,                           // usage
-            );
-        }
-        if insert_fence {
-            // Insert a "fence" in the opengl command queue so that we can check whether this command was completed
-            unsafe {
-                self.fence_opt = Some(self.gl.FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0));
-            }
-        }
-    }
-
-    /// Has the data finished uploading?
-    pub fn passed_fence(&mut self) -> bool {
-        if let Some(fence) = self.fence_opt {
-            let fence_status = unsafe { self.gl.ClientWaitSync(fence, 0, 0) };
-            if fence_status == gl::ALREADY_SIGNALED {
-                // We passed the fence, don't check again
-                self.fence_opt = None;
-                true
-            } else {
-                false
-            }
-        } else {
-            // No fence to pass
-            true
-        }
-    }
-
-    pub fn dynamic_draw_data<T>(&self, data: &[T]) {
-        unsafe {
-            self.gl.BufferData(
-                B::BUFFER_TYPE,                                                     // target
-                (data.len() * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // size of data in bytes
-                data.as_ptr() as *const gl::types::GLvoid, // pointer to data
-                gl::DYNAMIC_DRAW,                          // usage
+            gl.buffer_data_u8_slice(
+                glow::ELEMENT_ARRAY_BUFFER,
+                to_byte_slice(data),
+                glow::STATIC_DRAW,
             );
         }
     }
 
-    pub fn stream_draw_data<T>(&self, data: &[T]) {
+    pub fn dynamic_draw_data<T>(&self, gl: &glow::Context, data: &[T]) {
         unsafe {
-            self.gl.BufferData(
-                B::BUFFER_TYPE,                                                     // target
-                (data.len() * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // size of data in bytes
-                data.as_ptr() as *const gl::types::GLvoid, // pointer to data
-                gl::STREAM_DRAW,                           // usage
+            gl.buffer_data_u8_slice(
+                glow::ELEMENT_ARRAY_BUFFER,
+                to_byte_slice(data),
+                glow::DYNAMIC_DRAW,
             );
         }
     }
 
-    pub fn dynamic_draw_data_null<T>(&self, size: usize) {
+    pub fn stream_draw_data<T>(&self, gl: &glow::Context, data: &[T]) {
         unsafe {
-            self.gl.BufferData(
-                B::BUFFER_TYPE,                                               // target
-                (size * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // size of data in bytes
-                ::std::ptr::null() as *const gl::types::GLvoid,               // pointer to data
-                gl::DYNAMIC_DRAW,                                             // usage
+            gl.buffer_data_u8_slice(
+                glow::ELEMENT_ARRAY_BUFFER,
+                to_byte_slice(data),
+                glow::STREAM_DRAW,
             );
         }
     }
 
-    pub fn stream_draw_data_null<T>(&self, size: usize) {
+    pub fn unbind(&self, gl: &glow::Context) {
         unsafe {
-            self.gl.BufferData(
-                B::BUFFER_TYPE,                                               // target
-                (size * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // size of data in bytes
-                ::std::ptr::null() as *const gl::types::GLvoid,               // pointer to data
-                gl::STREAM_DRAW,                                              // usage
-            );
+            gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, None);
         }
     }
 
-    pub unsafe fn map_buffer_range_write_invalidate<'r, T>(
-        &self,
-        offset: usize,
-        size: usize,
-    ) -> Option<MappedBuffer<'r, B, T>> {
-        let ptr = self.gl.MapBufferRange(
-            B::BUFFER_TYPE,                                                 // target
-            (offset * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr, // offset
-            (size * ::std::mem::size_of::<T>()) as gl::types::GLsizeiptr,   // length
-            gl::MAP_WRITE_BIT | gl::MAP_INVALIDATE_RANGE_BIT,               // usage
-        );
-        if ptr == ::std::ptr::null_mut() {
-            return None;
-        }
-        return Some(MappedBuffer {
-            gl: self.gl.clone(),
-            data: ::std::slice::from_raw_parts_mut(ptr as *mut T, size),
-            _marker: ::std::marker::PhantomData,
-        });
-    }
-}
-
-impl<B> Drop for Buffer<B>
-where
-    B: BufferType,
-{
-    fn drop(&mut self) {
+    /// Drop the buffer. This is not needed on shutdown, as it will be cleaned up along with the OpenGL context.
+    pub fn drop(&self, gl: &glow::Context) {
         unsafe {
-            self.gl.DeleteBuffers(1, &mut self.vbo);
+            gl.delete_buffer(self.ebo);
         }
     }
 }
 
-pub struct MappedBuffer<'a, B, DataT: 'a>
-where
-    B: BufferType,
-{
-    gl: gl::Gl,
-    data: &'a mut [DataT],
-    _marker: ::std::marker::PhantomData<B>,
+pub struct VAO {
+    vao: VertexArray,
 }
 
-impl<'a, B, DataT: 'a> ::std::ops::Deref for MappedBuffer<'a, B, DataT>
-where
-    B: BufferType,
-{
-    type Target = [DataT];
+impl VAO {
+    pub fn new(gl: &glow::Context) -> Self {
+        let vao = unsafe { gl.create_vertex_array().unwrap() };
 
-    fn deref(&self) -> &Self::Target {
-        self.data
+        VAO { vao }
     }
-}
 
-impl<'a, B, DataT: 'a> ::std::ops::DerefMut for MappedBuffer<'a, B, DataT>
-where
-    B: BufferType,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.data
-    }
-}
-
-impl<'a, B, DataT: 'a> Drop for MappedBuffer<'a, B, DataT>
-where
-    B: BufferType,
-{
-    fn drop(&mut self) {
+    pub fn bind(&self, gl: &glow::Context) {
         unsafe {
-            self.gl.UnmapBuffer(B::BUFFER_TYPE);
+            gl.bind_vertex_array(Some(self.vao));
+        }
+    }
+
+    pub fn unbind(&self, gl: &glow::Context) {
+        unsafe {
+            gl.bind_vertex_array(None);
+        }
+    }
+
+    /// Drop the buffer. This is not needed on shutdown, as it will be cleaned up along with the OpenGL context.
+    pub fn drop(&self, gl: &glow::Context) {
+        unsafe {
+            gl.delete_vertex_array(self.vao);
         }
     }
 }
 
-pub type ArrayBuffer = Buffer<BufferTypeArray>;
-pub type ElementArrayBuffer = Buffer<BufferTypeElementArray>;
-
-pub struct VertexArray {
-    gl: gl::Gl,
-    vao: gl::types::GLuint,
-}
-
-impl VertexArray {
-    pub fn new(gl: &gl::Gl) -> VertexArray {
-        let mut vao: gl::types::GLuint = 0;
-        unsafe {
-            gl.GenVertexArrays(1, &mut vao);
-        }
-
-        VertexArray {
-            gl: gl.clone(),
-            vao,
-        }
-    }
-
-    pub fn bind(&self) {
-        unsafe {
-            self.gl.BindVertexArray(self.vao);
-        }
-    }
-
-    pub fn unbind(&self) {
-        unsafe {
-            self.gl.BindVertexArray(0);
-        }
-    }
-}
-
-impl Drop for VertexArray {
-    fn drop(&mut self) {
-        unsafe {
-            self.gl.DeleteVertexArrays(1, &mut self.vao);
-        }
-    }
+pub unsafe fn to_byte_slice<T>(slice: &[T]) -> &[u8] {
+    std::slice::from_raw_parts(
+        slice.as_ptr().cast(),
+        slice.len() * std::mem::size_of::<T>(),
+    )
 }

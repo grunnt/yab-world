@@ -21,7 +21,6 @@ fn main() {
     flexi_logger::Logger::with_str("debug").start().unwrap();
 
     info!("  --== Starting YAB-World ==--");
-    info!("To run with OpenGL debug: cargo run --features \"gl_debug\"");
     let args: Vec<String> = env::args().collect();
 
     let mut rng = rand::thread_rng();
