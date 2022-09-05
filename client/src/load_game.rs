@@ -28,31 +28,42 @@ impl State<GameContext> for LoadGameState {
         _context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
-        egui::CentralPanel::default().show(gui, |ui| {
+        egui::SidePanel::left("Load").show(gui, |ui| {
             ui.with_layout(
                 egui::Layout::top_down_justified(egui::Align::Center),
                 |ui| {
                     ui.heading("Load game");
+                    ui.separator();
                     ScrollArea::vertical()
                         .max_height(200.0)
                         .auto_shrink([false; 2])
                         .show(ui, |ui| {
-                            ui.vertical(|ui| {
-                                for world in &self.worlds {
-                                    if ui.button(&world.description).clicked() {
-                                        data.server_address =
-                                            Some(format!("0.0.0.0:{}", DEFAULT_TCP_PORT));
-                                        data.connect_to_address =
-                                            Some(format!("127.0.0.1:{}", DEFAULT_TCP_PORT));
-                                        data.seed = world.seed;
-                                        state_command = StateCommand::ReplaceState {
-                                            state: Box::new(StartGameState::new()),
-                                        };
+                            ui.with_layout(
+                                egui::Layout::top_down_justified(egui::Align::Min),
+                                |ui| {
+                                    for world in &self.worlds {
+                                        if ui
+                                            .button(format!(
+                                                "{}\n{}",
+                                                world.description,
+                                                world.timestamp.format("%Y-%m-%d %H:%M:%S")
+                                            ))
+                                            .clicked()
+                                        {
+                                            data.server_address =
+                                                Some(format!("0.0.0.0:{}", DEFAULT_TCP_PORT));
+                                            data.connect_to_address =
+                                                Some(format!("127.0.0.1:{}", DEFAULT_TCP_PORT));
+                                            data.seed = world.seed;
+                                            state_command = StateCommand::ReplaceState {
+                                                state: Box::new(StartGameState::new()),
+                                            };
+                                        }
                                     }
-                                }
-                            });
+                                },
+                            );
                         });
-
+                    ui.separator();
                     if ui.button("Back").clicked() {
                         state_command = StateCommand::CloseState;
                     }

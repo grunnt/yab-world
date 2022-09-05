@@ -65,8 +65,7 @@ impl App {
         }
 
         let mut egui_glow = egui_glow::EguiGlow::new(&events_loop, gl.clone());
-
-        // egui_glow.egui_ctx.set_pixels_per_point(3.0);
+        egui_glow.egui_ctx.set_pixels_per_point(2.0);
 
         let scale_factor = 1.0;
         let mut system = SystemContext::new(gl, width, height, scale_factor, assets);

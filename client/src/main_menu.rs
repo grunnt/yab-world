@@ -40,49 +40,53 @@ impl State<GameContext> for MainMenuState {
         _system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
-        egui::Area::new("Main Menu").show(gui, |ui| {
-            // ui.horizontal_centered(|ui| {
-            //     ui.vertical_centered_justified(|ui| {
-            ui.heading("YAB-World");
-            if ui.button("Continue").clicked() {
-                if self.continue_save.is_some() {
-                    let save = self.continue_save.as_ref().unwrap();
-                    debug!("Continue game");
-                    data.server_address = Some(format!("0.0.0.0:{}", DEFAULT_TCP_PORT));
-                    data.connect_to_address = Some(format!("127.0.0.1:{}", DEFAULT_TCP_PORT));
-                    data.seed = save.seed;
-                    data.description = save.description.clone();
-                    state_command = StateCommand::OpenState {
-                        state: Box::new(StartGameState::new()),
-                    };
-                }
-            }
-            if ui.button("New").clicked() {
-                state_command = StateCommand::OpenState {
-                    state: Box::new(NewGameState::new()),
-                };
-            }
-            if ui.button("Load").clicked() {
-                state_command = StateCommand::OpenState {
-                    state: Box::new(LoadGameState::new()),
-                };
-            }
-            if ui.button("Join").clicked() {
-                state_command = StateCommand::OpenState {
-                    state: Box::new(JoinGameState::new()),
-                };
-            }
-            if ui.button("Settings").clicked() {
-                state_command = StateCommand::OpenState {
-                    state: Box::new(SettingsState::new()),
-                };
-            }
-            if ui.button("Exit").clicked() {
-                state_command = StateCommand::CloseState;
-            }
+        egui::SidePanel::left("Main").show(gui, |ui| {
+            ui.with_layout(
+                egui::Layout::top_down_justified(egui::Align::Center),
+                |ui| {
+                    ui.heading("YAB-World");
+                    ui.separator();
+                    if ui.button("Continue").clicked() {
+                        if self.continue_save.is_some() {
+                            let save = self.continue_save.as_ref().unwrap();
+                            debug!("Continue game");
+                            data.server_address = Some(format!("0.0.0.0:{}", DEFAULT_TCP_PORT));
+                            data.connect_to_address =
+                                Some(format!("127.0.0.1:{}", DEFAULT_TCP_PORT));
+                            data.seed = save.seed;
+                            data.description = save.description.clone();
+                            state_command = StateCommand::OpenState {
+                                state: Box::new(StartGameState::new()),
+                            };
+                        }
+                    }
+                    if ui.button("New").clicked() {
+                        state_command = StateCommand::OpenState {
+                            state: Box::new(NewGameState::new()),
+                        };
+                    }
+                    if ui.button("Load").clicked() {
+                        state_command = StateCommand::OpenState {
+                            state: Box::new(LoadGameState::new()),
+                        };
+                    }
+                    if ui.button("Join").clicked() {
+                        state_command = StateCommand::OpenState {
+                            state: Box::new(JoinGameState::new()),
+                        };
+                    }
+                    if ui.button("Settings").clicked() {
+                        state_command = StateCommand::OpenState {
+                            state: Box::new(SettingsState::new()),
+                        };
+                    }
+                    ui.separator();
+                    if ui.button("Exit").clicked() {
+                        state_command = StateCommand::CloseState;
+                    }
+                },
+            );
         });
-        //     });
-        // });
         state_command
     }
 

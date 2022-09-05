@@ -12,23 +12,19 @@ pub enum StateCommand<GameContext> {
 
 pub struct StateManager<GameContext> {
     state_stack: Vec<Box<dyn State<GameContext>>>,
-    data: GameContext,
+    game_context: GameContext,
 }
 
 impl<GameContext: SharedContext> StateManager<GameContext> {
     pub fn new(data: GameContext) -> StateManager<GameContext> {
         StateManager {
             state_stack: Vec::new(),
-            data,
+            game_context: data,
         }
     }
 
-    pub fn activate(
-        &mut self,
-        mut state: Box<dyn State<GameContext>>,
-        context: &mut SystemContext,
-    ) {
-        state.initialize(&mut self.data, context);
+    pub fn activate(&mut self, mut state: Box<dyn State<GameContext>>, system: &mut SystemContext) {
+        state.initialize(&mut self.game_context, system);
         self.state_stack.push(state);
     }
 
@@ -37,15 +33,15 @@ impl<GameContext: SharedContext> StateManager<GameContext> {
         delta: f32,
         gui: &egui::Context,
         input_events: &Vec<InputEvent>,
-        context: &mut SystemContext,
+        system: &mut SystemContext,
     ) -> bool {
         assert!(!self.state_stack.is_empty());
         let top_state = self.state_stack.last_mut().unwrap();
         let mut exit = false;
-        match top_state.update(delta, &mut self.data, gui, input_events, context) {
+        match top_state.update(delta, &mut self.game_context, gui, input_events, system) {
             StateCommand::OpenState { mut state } => {
                 debug!("Open state {}", state.type_name());
-                state.initialize(&mut self.data, context);
+                state.initialize(&mut self.game_context, system);
                 self.state_stack.push(state);
             }
             StateCommand::ReplaceState { mut state } => {
@@ -56,7 +52,7 @@ impl<GameContext: SharedContext> StateManager<GameContext> {
                 );
                 top_state.shutdown();
                 self.state_stack.pop();
-                state.initialize(&mut self.data, context);
+                state.initialize(&mut self.game_context, system);
                 self.state_stack.push(state);
             }
             StateCommand::CloseState {} => {
@@ -77,13 +73,13 @@ impl<GameContext: SharedContext> StateManager<GameContext> {
         exit
     }
 
-    pub fn render(&mut self, context: &mut SystemContext) {
+    pub fn render(&mut self, system: &mut SystemContext) {
         let top_state = self.state_stack.last_mut().unwrap();
-        top_state.render(&mut self.data, context);
+        top_state.render(&mut self.game_context, system);
     }
 
-    pub fn resize(&mut self, context: &mut SystemContext) {
+    pub fn resize(&mut self, system: &mut SystemContext) {
         let top_state = self.state_stack.last_mut().unwrap();
-        top_state.resize(&mut self.data, context);
+        top_state.resize(&mut self.game_context, system);
     }
 }

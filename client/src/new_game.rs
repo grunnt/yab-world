@@ -35,38 +35,57 @@ impl State<GameContext> for NewGameState {
         _context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
-        egui::CentralPanel::default().show(gui, |ui| {
+        egui::SidePanel::left("New").show(gui, |ui| {
             ui.with_layout(
                 egui::Layout::top_down_justified(egui::Align::Center),
                 |ui| {
                     ui.heading("New game");
-                    ui.add(egui::Label::new("Seed"));
-                    ui.add(egui::TextEdit::singleline(&mut self.seed));
-                    if ui.button("Randomize seed").clicked() {
-                        self.seed = self.rng.next_u32().to_string();
-                    }
-                    ui.add(egui::Label::new("Name"));
-                    ui.add(egui::TextEdit::singleline(&mut self.name));
-                    egui::ComboBox::from_label("World type")
-                        .selected_text(format!("{:?}", self.world_type))
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut self.world_type,
-                                GeneratorType::Default,
-                                "Default",
-                            );
-                            ui.selectable_value(
-                                &mut self.world_type,
-                                GeneratorType::Alien,
-                                "Alien",
-                            );
-                            ui.selectable_value(&mut self.world_type, GeneratorType::Flat, "Flat");
-                            ui.selectable_value(
-                                &mut self.world_type,
-                                GeneratorType::Water,
-                                "Water",
-                            );
+                    ui.separator();
+                    egui::Grid::new("my_grid")
+                        .num_columns(2)
+                        .spacing([40.0, 4.0])
+                        .show(ui, |ui| {
+                            ui.add(egui::Label::new("Seed"));
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    egui::TextEdit::singleline(&mut self.seed).desired_width(100.0),
+                                );
+                                if ui.button("Random").clicked() {
+                                    self.seed = self.rng.next_u32().to_string();
+                                }
+                            });
+                            ui.end_row();
+                            ui.add(egui::Label::new("Name"));
+                            ui.add(egui::TextEdit::singleline(&mut self.name));
+                            ui.end_row();
+                            ui.add(egui::Label::new("Type"));
+                            egui::ComboBox::from_id_source("world_type")
+                                .selected_text(format!("{:?}", self.world_type))
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(
+                                        &mut self.world_type,
+                                        GeneratorType::Default,
+                                        "Default",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.world_type,
+                                        GeneratorType::Alien,
+                                        "Alien",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.world_type,
+                                        GeneratorType::Flat,
+                                        "Flat",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.world_type,
+                                        GeneratorType::Water,
+                                        "Water",
+                                    );
+                                });
+                            ui.end_row();
                         });
+                    ui.separator();
                     if ui.button("Create").clicked() {
                         data.server_address = Some(format!("0.0.0.0:{}", DEFAULT_TCP_PORT));
                         data.connect_to_address = Some(format!("127.0.0.1:{}", DEFAULT_TCP_PORT));

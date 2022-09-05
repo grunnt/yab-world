@@ -21,15 +21,17 @@ impl State<GameContext> for SettingsState {
         _context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
-        egui::CentralPanel::default().show(gui, |ui| {
+        egui::SidePanel::left("Settings").show(gui, |ui| {
             ui.with_layout(
                 egui::Layout::top_down_justified(egui::Align::Center),
                 |ui| {
                     ui.heading("Settings");
+                    ui.separator();
                     ui.add(
                         egui::Slider::new(&mut data.config.render_range_chunks, 4..=128)
                             .text("Render distance"),
                     );
+                    ui.separator();
                     if ui.button("Back").clicked() {
                         state_command = StateCommand::CloseState;
                     }

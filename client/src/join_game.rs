@@ -27,13 +27,15 @@ impl State<GameContext> for JoinGameState {
         _context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
-        egui::CentralPanel::default().show(gui, |ui| {
+        egui::SidePanel::left("Join").show(gui, |ui| {
             ui.with_layout(
                 egui::Layout::top_down_justified(egui::Align::Center),
                 |ui| {
                     ui.heading("Join game");
+                    ui.separator();
                     ui.add(egui::Label::new("Server address"));
                     ui.add(egui::TextEdit::singleline(&mut self.address));
+                    ui.separator();
                     if ui.button("Join").clicked() {
                         let server_address = format!("{}:{}", self.address, DEFAULT_TCP_PORT);
                         let server_address = if server_address == "localhost" {

@@ -1,4 +1,5 @@
 use crate::superchunk::SuperChunk;
+use common::chrono::Utc;
 use common::chunk::*;
 use common::comms::*;
 use common::world_definition::*;
@@ -136,7 +137,7 @@ impl WorldStore {
         }
 
         self.world_def.gametime = game_time;
-        self.world_def.timestamp = now_ms();
+        self.world_def.timestamp = Utc::now();
         self.world_def.save(&self.world_folder.join(WORLD_DEF_FILE));
 
         // Group chunks by superchunk

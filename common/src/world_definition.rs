@@ -1,7 +1,8 @@
+use chrono::serde::ts_milliseconds;
+use chrono::{DateTime, Utc};
 use log::*;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::{fs, path::Path};
 
 use crate::world_type::GeneratorType;
@@ -68,7 +69,7 @@ impl WorldsStore {
             world_type,
             description: description.to_string(),
             version: VERSION.to_string(),
-            timestamp: now_ms(),
+            timestamp: Utc::now(),
             gametime: 0.3, // Early morning
         };
         world.save(&world_info_file);
@@ -95,7 +96,8 @@ pub struct WorldDef {
     pub world_type: GeneratorType,
     pub description: String,
     pub version: String,
-    pub timestamp: u128,
+    #[serde(with = "ts_milliseconds")]
+    pub timestamp: DateTime<Utc>,
     pub gametime: f32,
 }
 
@@ -121,12 +123,4 @@ impl WorldDef {
         let def_string = serde_json::to_string_pretty(self).unwrap();
         fs::write(path, def_string).unwrap();
     }
-}
-
-pub fn now_ms() -> u128 {
-    let start = SystemTime::now();
-    let since_the_epoch = start
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards");
-    since_the_epoch.as_millis()
 }
