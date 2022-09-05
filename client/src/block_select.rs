@@ -49,6 +49,7 @@ impl State<GameContext> for BlockSelectState {
                         });
 
                     if ui.button("Back").clicked() {
+                        context.input_mut().set_mouse_captured(true);
                         state_command = StateCommand::CloseState;
                     }
                 },
