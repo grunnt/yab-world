@@ -27,33 +27,37 @@ impl State<GameContext> for BlockSelectState {
         context: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
+        egui::TopBottomPanel::top("top").show(gui, |ui| {
+            ui.heading("Select block");
+        });
+        egui::TopBottomPanel::bottom("'bottom'").show(gui, |ui| {
+            if ui.button("Back").clicked() {
+                context.input_mut().set_mouse_captured(true);
+                state_command = StateCommand::CloseState;
+            }
+        });
         egui::CentralPanel::default().show(gui, |ui| {
-            ui.with_layout(
-                egui::Layout::top_down_justified(egui::Align::Center),
-                |ui| {
-                    ui.heading("Select block");
-                    ScrollArea::vertical()
-                        .max_height(200.0)
-                        .auto_shrink([false; 2])
-                        .show(ui, |ui| {
-                            ui.vertical(|ui| {
-                                for block in self.block_registry.all_blocks() {
-                                    if ui.button(&block.name).clicked() {
-                                        data.selected_block =
-                                            data.block_registry.block_kind_from_code(&block.code);
-                                        context.input_mut().set_mouse_captured(true);
-                                        state_command = StateCommand::CloseState;
-                                    }
+            ScrollArea::vertical()
+                .max_height(f32::INFINITY)
+                .show(ui, |ui| {
+                    ui.horizontal_wrapped(|ui| {
+                        let mut block_id = 0;
+                        for block in self.block_registry.all_blocks() {
+                            let count = data.inventory.count(block_id);
+                            if count > 0 {
+                                if ui.button(format!("{} ({})", block.name, count)).clicked() {
+                                    data.selected_block =
+                                        data.block_registry.block_kind_from_code(&block.code);
+                                    context.input_mut().set_mouse_captured(true);
+                                    state_command = StateCommand::CloseState;
                                 }
-                            });
-                        });
-
-                    if ui.button("Back").clicked() {
-                        context.input_mut().set_mouse_captured(true);
-                        state_command = StateCommand::CloseState;
-                    }
-                },
-            );
+                            } else {
+                                ui.label(&block.name);
+                            }
+                            block_id += 1;
+                        }
+                    });
+                });
         });
         for event in input_events {
             match event {
