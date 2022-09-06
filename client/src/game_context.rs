@@ -24,6 +24,7 @@ pub struct GameContext {
     pub player_position_handle: ParticlePositionHandle,
     pub player_target_handle: ParticlePositionHandle,
     pub block_registry: BlockRegistry,
+    pub block_texture_atlas: Option<TextureAtlas>,
     pub seed: u32,
     pub description: String,
     pub server: Option<YabServer>,
@@ -52,6 +53,7 @@ impl GameContext {
         GameContext {
             player_id: None,
             block_registry: BlockRegistry::empty(),
+            block_texture_atlas: None,
             particles: None,
             dig_common_emitter: None,
             dig_iron_emitter: None,
@@ -163,8 +165,13 @@ impl GameContext {
 
 impl SharedContext for GameContext {
     fn initialize(&mut self, context: &mut SystemContext) {
+        self.block_texture_atlas = Some(TextureAtlas::load(
+            &context.assets().path("atlas/blocks.png"),
+            &context.assets().path("atlas/blocks.json"),
+            context.video().gl(),
+        ));
         let texture_array = TextureArray::load_directory(
-            &context.assets().assets_path("particles"),
+            &context.assets().path("particles"),
             TextureFormat::RGBA8,
             TextureWrap::None,
             TextureFilter::MipMapNearest,

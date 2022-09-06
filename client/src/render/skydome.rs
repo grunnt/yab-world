@@ -48,7 +48,7 @@ impl SkyDome {
         let light_col_uniform = program.get_uniform(gl, "sunColor");
 
         // Currently model is a full sphere, we might change this to hemisphere for performance
-        let (models, _) = tobj::load_obj(assets.assets_path("objects/skydome.obj"), true)
+        let (models, _) = tobj::load_obj(assets.path("objects/skydome.obj"), true)
             .expect("Failed to load object file");
         assert!(models.len() == 1);
         let model = models.get(0).unwrap();

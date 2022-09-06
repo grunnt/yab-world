@@ -22,7 +22,7 @@ impl Assets {
         self.assets_path.exists() && self.assets_path.is_dir()
     }
 
-    pub fn assets_path(&self, file: &str) -> PathBuf {
+    pub fn path(&self, file: &str) -> PathBuf {
         self.assets_path.join(file)
     }
 }

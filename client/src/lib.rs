@@ -1,3 +1,4 @@
+mod block_button;
 mod block_select;
 mod client_config;
 mod game_context;

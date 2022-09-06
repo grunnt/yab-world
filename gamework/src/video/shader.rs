@@ -83,15 +83,15 @@ impl ShaderProgram {
         fragment_shader_file: &str,
         name: String,
     ) -> Result<Self, Error> {
-        let vertex_shader_source = fs::read_to_string(assets.assets_path(vertex_shader_file))
-            .map_err(|_| Error::ReadFile {
+        let vertex_shader_source =
+            fs::read_to_string(assets.path(vertex_shader_file)).map_err(|_| Error::ReadFile {
                 name: vertex_shader_file.to_string(),
             })?;
 
-        let fragment_shader_source = fs::read_to_string(assets.assets_path(fragment_shader_file))
+        let fragment_shader_source = fs::read_to_string(assets.path(fragment_shader_file))
             .map_err(|_| Error::ReadFile {
-            name: fragment_shader_file.to_string(),
-        })?;
+                name: fragment_shader_file.to_string(),
+            })?;
 
         ShaderProgram::from_strings(gl, &vertex_shader_source, &fragment_shader_source, name)
     }

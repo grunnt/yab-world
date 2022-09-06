@@ -321,7 +321,7 @@ impl BlockRegistry {
         texture_paths.sort_by(|a, b| (a.1).partial_cmp(&b.1).unwrap());
         texture_paths
             .iter()
-            .map(|file_index| assets.assets_path(&format!("block_textures/{}.png", file_index.0)))
+            .map(|file_index| assets.path(&format!("block_textures/{}.png", file_index.0)))
             .collect()
     }
 }

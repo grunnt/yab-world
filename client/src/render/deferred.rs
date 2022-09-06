@@ -106,7 +106,7 @@ impl DeferredPipeline {
 
         let random_texture = Some(
             MyTexture::load(
-                &assets.assets_path("textures/random.png"),
+                &assets.path("textures/random.png"),
                 gl,
                 TextureFormat::RGBA8,
                 TextureWrap::Repeat,
