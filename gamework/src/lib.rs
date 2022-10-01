@@ -2,6 +2,7 @@ mod app;
 mod assets;
 // pub mod audio;
 // pub mod egui_glow;
+mod audio;
 mod flat_grid;
 mod gui;
 mod input;

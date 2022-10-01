@@ -7,9 +7,11 @@ use common::comms::*;
 use common::daynight::DayNight;
 use common::inventory::Inventory;
 use common::player::PlayerData;
+use egui::TextureHandle;
 use gamework::video::*;
 use nalgebra_glm::*;
 use server::YabServer;
+use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
 pub struct GameContext {
@@ -46,6 +48,7 @@ pub struct GameContext {
     pub player_id: Option<u8>,
     pub players: Vec<PlayerData>,
     pub last_sound_position: Vec3,
+    pub gui_images: HashMap<String, TextureHandle>,
 }
 
 impl GameContext {
@@ -84,6 +87,7 @@ impl GameContext {
             config: ClientConfig::load(),
             players: Vec::new(),
             last_sound_position: Vec3::zeros(),
+            gui_images: HashMap::new(),
         }
     }
 
@@ -164,22 +168,25 @@ impl GameContext {
 }
 
 impl SharedContext for GameContext {
-    fn initialize(&mut self, context: &mut SystemContext) {
+    fn initialize(&mut self, system: &mut SystemContext) {
+        system.audio_mut().volume = self.config.sound_effect_volume;
+
         self.block_texture_atlas = Some(TextureAtlas::load(
-            &context.assets().path("atlas/blocks.png"),
-            &context.assets().path("atlas/blocks.json"),
-            context.video().gl(),
+            &system.assets().path("atlas/blocks.png"),
+            &system.assets().path("atlas/blocks.json"),
+            system.video().gl(),
+            TextureFilter::Nearest,
         ));
         let texture_array = TextureArray::load_directory(
-            &context.assets().path("particles"),
+            &system.assets().path("particles"),
             TextureFormat::RGBA8,
             TextureWrap::None,
             TextureFilter::MipMapNearest,
-            context.video().gl(),
+            system.video().gl(),
         );
         self.particles = Some(ParticleSystem::new(
-            context.video().gl(),
-            context.assets(),
+            system.video().gl(),
+            system.assets(),
             texture_array,
         ));
         self.player_position_handle = self.particles_mut().new_position_handle();

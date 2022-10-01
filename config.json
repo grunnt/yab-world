@@ -1,5 +1,6 @@
 {
-  "render_range_chunks": 16,
+  "render_range_chunks": 50,
+  "sound_effect_volume": 0.25,
   "camera_sensitivity_x": 1.0,
   "camera_sensitivity_y": 1.0
 }

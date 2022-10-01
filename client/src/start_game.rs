@@ -7,6 +7,7 @@ use common::chunk::*;
 use common::comms::*;
 use common::world_type::GeneratorType;
 use gamework::*;
+use image::GenericImageView;
 use log::*;
 use nalgebra_glm::*;
 use server::YabServer;
@@ -228,6 +229,31 @@ impl State<GameContext> for StartGameState {
                 ("Downloading chunks", 0.3 + progress * 0.7)
             }
             StartGameStage::EnteringGame => {
+                // Load block preview images for use in the GUI
+                let block_codes: Vec<String> = data
+                    .block_registry
+                    .all_blocks()
+                    .iter()
+                    .map(|def| def.code.clone())
+                    .collect();
+                data.gui_images.clear();
+                for block_code in &block_codes {
+                    let path = &context
+                        .assets()
+                        .path("block_previews")
+                        .join(&format!("block_preview_{}.png", block_code));
+                    if path.exists() {
+                        let image = load_image_from_path(&path).unwrap();
+                        let handle = gui.load_texture(
+                            format!("preview_{}", block_code),
+                            image,
+                            egui::TextureFilter::Linear,
+                        );
+                        data.gui_images
+                            .insert(format!("preview_{}", block_code), handle);
+                    }
+                }
+                // Start the game
                 return StateCommand::ReplaceState {
                     state: Box::new(InGameState::new()),
                 };
@@ -255,4 +281,15 @@ fn show_message(gui: &egui::Context, message: &str, progress: f32) {
             },
         );
     });
+}
+
+fn load_image_from_path(path: &std::path::Path) -> Result<egui::ColorImage, image::ImageError> {
+    let image = image::io::Reader::open(path)?.decode()?;
+    let size = [image.width() as _, image.height() as _];
+    let image_buffer = image.to_rgba();
+    let pixels = image_buffer.as_flat_samples();
+    Ok(egui::ColorImage::from_rgba_unmultiplied(
+        size,
+        pixels.as_slice(),
+    ))
 }

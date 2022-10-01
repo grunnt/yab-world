@@ -1,6 +1,6 @@
 // #![windows_subsystem = "windows"]
 
-use client::{StartMode, YabClient};
+use client::{block_preview_generator::generate_block_previews, StartMode, YabClient};
 use common::{comms::DEFAULT_TCP_PORT, world_type::GeneratorType};
 use flexi_logger;
 use gamework::video::generate_texture_atlas;
@@ -14,6 +14,7 @@ enum RunMode {
     Client,
     Server,
     TexturePack,
+    BlockPreviews,
 }
 
 fn main() {
@@ -68,6 +69,7 @@ fn main() {
             "new" => client_start_mode = StartMode::QuickNewWorld,
             "continue" => client_start_mode = StartMode::Continue,
             "pack" => run_mode = RunMode::TexturePack,
+            "block_previews" => run_mode = RunMode::BlockPreviews,
             _ => {}
         }
     }
@@ -88,9 +90,17 @@ fn main() {
         RunMode::TexturePack => {
             info!("Packing texture atlas");
             generate_texture_atlas(
-                &Path::new("client/assets/block_textures"),
-                &Path::new("client/assets/atlas/blocks.png"),
-                &Path::new("client/assets/atlas/blocks.json"),
+                &Path::new("assets/block_textures"),
+                &Path::new("assets/atlas/blocks.png"),
+                &Path::new("assets/atlas/blocks.json"),
+            );
+        }
+        RunMode::BlockPreviews => {
+            info!("Generating block preview images");
+            generate_block_previews(
+                Path::new("assets/blocks.json").to_path_buf(),
+                Path::new("assets/block_textures").to_path_buf(),
+                Path::new("assets/block_previews").to_path_buf(),
             );
         }
     }

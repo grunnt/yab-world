@@ -2,11 +2,13 @@ use crate::block_button::*;
 use crate::GameContext;
 use common::{block::*, inventory::Inventory};
 use egui::ScrollArea;
+use egui::Vec2;
 use gamework::*;
 
 pub struct BlockSelectState {
     block_registry: BlockRegistry,
     viewed_block: Option<Block>,
+    filter: String,
 }
 
 impl BlockSelectState {
@@ -14,6 +16,7 @@ impl BlockSelectState {
         BlockSelectState {
             block_registry: block_registry.clone(),
             viewed_block: None,
+            filter: "".to_string(),
         }
     }
 }
@@ -24,18 +27,19 @@ impl State<GameContext> for BlockSelectState {
     fn update(
         &mut self,
         _delta: f32,
-        data: &mut GameContext,
+        context: &mut GameContext,
         gui: &egui::Context,
         input_events: &Vec<InputEvent>,
-        context: &mut SystemContext,
+        system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
         egui::TopBottomPanel::top("top").show(gui, |ui| {
             ui.heading("Select block");
+            ui.text_edit_singleline(&mut self.filter);
         });
         egui::TopBottomPanel::bottom("bottom").show(gui, |ui| {
             if ui.button("Back").clicked() {
-                context.input_mut().set_mouse_captured(true);
+                system.input_mut().set_mouse_captured(true);
                 state_command = StateCommand::CloseState;
             }
         });
@@ -43,7 +47,7 @@ impl State<GameContext> for BlockSelectState {
             .resizable(false)
             .show(gui, |ui| {
                 if let Some(block) = &self.viewed_block {
-                    let block_def = data.block_registry.get(*block);
+                    let block_def = context.block_registry.get(*block);
                     ui.label(&block_def.name);
                     if block_def.buildable {
                         ui.label("Buildable");
@@ -57,12 +61,13 @@ impl State<GameContext> for BlockSelectState {
                     if block_def.light > 0 {
                         ui.label("Emits light");
                     }
-                    let count = data.inventory.count(*block);
+                    let count = context.inventory.count(*block);
                     if count > 0 {
                         ui.label(format!("{} in inventory", count));
                     }
                 }
             });
+        self.viewed_block = None;
         egui::CentralPanel::default().show(gui, |ui| {
             ScrollArea::vertical()
                 .max_height(f32::INFINITY)
@@ -71,17 +76,30 @@ impl State<GameContext> for BlockSelectState {
                         let mut block_id = 0;
                         for block in self.block_registry.all_blocks() {
                             if block.buildable {
-                                let count = data.inventory.count(block_id);
-                                let block_button =
-                                    block_button(ui, block.name.clone().into(), count);
-                                if block_button.clicked() {
-                                    data.selected_block =
-                                        data.block_registry.block_kind_from_code(&block.code);
-                                    context.input_mut().set_mouse_captured(true);
-                                    state_command = StateCommand::CloseState;
-                                }
-                                if block_button.hovered() {
-                                    self.viewed_block = Some(block_id);
+                                if self.filter.is_empty()
+                                    || block
+                                        .name
+                                        .to_lowercase()
+                                        .contains(&self.filter.to_lowercase())
+                                {
+                                    let count = context.inventory.count(block_id);
+                                    let preview_size = Vec2::new(48.0, 48.0);
+                                    if let Some(preview_texture) =
+                                        context.gui_images.get(&format!("preview_{}", block.code))
+                                    {
+                                        let block_button =
+                                            block_button(ui, preview_texture, preview_size, count);
+                                        if block_button.clicked() {
+                                            context.selected_block = context
+                                                .block_registry
+                                                .block_kind_from_code(&block.code);
+                                            system.input_mut().set_mouse_captured(true);
+                                            state_command = StateCommand::CloseState;
+                                        }
+                                        if block_button.hovered() {
+                                            self.viewed_block = Some(block_id);
+                                        }
+                                    }
                                 }
                             }
                             block_id += 1;
@@ -93,7 +111,7 @@ impl State<GameContext> for BlockSelectState {
             match event {
                 InputEvent::KeyPress { key, .. } => match key {
                     Key::Tab => {
-                        context.input_mut().set_mouse_captured(true);
+                        system.input_mut().set_mouse_captured(true);
                         return StateCommand::CloseState;
                     }
                     _ => {}

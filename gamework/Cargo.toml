@@ -25,6 +25,7 @@ circular-queue = "0.2.4"
 texture_packer = "0.22.0"
 rand = "0.7.3"
 noise = "0.7.0"
+rodio = "0.16.0"
 
 [build-dependencies]
 walkdir = "2.1"

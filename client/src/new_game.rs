@@ -29,10 +29,10 @@ impl State<GameContext> for NewGameState {
     fn update(
         &mut self,
         _delta: f32,
-        data: &mut GameContext,
+        context: &mut GameContext,
         gui: &egui::Context,
         _input_events: &Vec<InputEvent>,
-        _context: &mut SystemContext,
+        system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
         egui::SidePanel::left("New").show(gui, |ui| {
@@ -51,6 +51,7 @@ impl State<GameContext> for NewGameState {
                                     egui::TextEdit::singleline(&mut self.seed).desired_width(100.0),
                                 );
                                 if ui.button("Random").clicked() {
+                                    system.audio().play_sound("click");
                                     self.seed = self.rng.next_u32().to_string();
                                 }
                             });
@@ -87,13 +88,15 @@ impl State<GameContext> for NewGameState {
                         });
                     ui.separator();
                     if ui.button("Create").clicked() {
-                        data.server_address = Some(format!("0.0.0.0:{}", DEFAULT_TCP_PORT));
-                        data.connect_to_address = Some(format!("127.0.0.1:{}", DEFAULT_TCP_PORT));
-                        data.world_type = Some(self.world_type);
+                        system.audio().play_sound("click");
+                        context.server_address = Some(format!("0.0.0.0:{}", DEFAULT_TCP_PORT));
+                        context.connect_to_address =
+                            Some(format!("127.0.0.1:{}", DEFAULT_TCP_PORT));
+                        context.world_type = Some(self.world_type);
                         match self.seed.parse() {
                             Ok(seed) => {
-                                data.seed = seed;
-                                data.description = self.name.clone();
+                                context.seed = seed;
+                                context.description = self.name.clone();
                                 state_command = StateCommand::ReplaceState {
                                     state: Box::new(StartGameState::new()),
                                 };
@@ -104,6 +107,7 @@ impl State<GameContext> for NewGameState {
                         }
                     }
                     if ui.button("Back").clicked() {
+                        system.audio().play_sound("click");
                         state_command = StateCommand::CloseState;
                     }
                 },

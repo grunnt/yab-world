@@ -228,33 +228,47 @@ impl BlockRegistry {
     }
 
     /// Load a block definition file from the given path or create a default one if the file cannot be loaded.
-    pub fn load_or_create(folder_path: &Path) -> BlockRegistry {
-        let path = folder_path.join("blocks.json");
+    pub fn load_or_create(path: &Path) -> Result<BlockRegistry, String> {
         match fs::read_to_string(&path) {
             Ok(string) => match serde_json::from_str(&string) {
                 Ok(blocks) => {
                     let mut registry = BlockRegistry::empty();
                     registry.blocks = blocks;
                     registry.build_indexes();
-                    return registry;
+                    return Ok(registry);
                 }
                 Err(e) => {
-                    warn!("Error loading file: {}", e);
+                    warn!(
+                        "Error loading file {}: {}",
+                        path.as_os_str().to_str().unwrap(),
+                        e
+                    );
                 }
             },
             Err(e) => {
-                warn!("Error loading file: {}", e);
+                warn!(
+                    "Error loading file {}: {}",
+                    path.as_os_str().to_str().unwrap(),
+                    e
+                );
             }
         }
         let mut defaults = BlockRegistry::default();
-        defaults.save(&path);
-        defaults
+        defaults.save(&path).map_err(|e| {
+            format!(
+                "Could not save block registry at {}: {}",
+                path.as_os_str().to_str().unwrap(),
+                e
+            )
+        })?;
+        Ok(defaults)
     }
 
-    fn save(&mut self, path: &Path) {
+    fn save(&mut self, path: &Path) -> Result<(), std::io::Error> {
         let string = serde_json::to_string_pretty(&self.blocks).unwrap();
-        fs::write(path, string).unwrap();
+        fs::write(path, string)?;
         info!("File {:?} created", path);
+        Ok(())
     }
 
     fn build_indexes(&mut self) {

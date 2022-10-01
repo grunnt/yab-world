@@ -1,15 +1,16 @@
 use std::sync::Arc;
 
+use crate::audio::{AudioOutput, AudioSource};
 use crate::profile::Profile;
 use crate::video::*;
 use crate::*;
 
-pub const PROFILE_SAMPLES: usize = 300;
+pub const PROFILE_SAMPLES: usize = 128;
 
 pub struct SystemContext {
     video: Video,
     assets: Assets,
-    // audio: AudioOutput,
+    audio: AudioOutput,
     input: Input,
     frame_profile: Profile,
     render_profile: Profile,
@@ -27,11 +28,11 @@ impl SystemContext {
     ) -> SystemContext {
         // Initialize audio and video subsystem
         let video = Video::new(gl, width, height, dpi);
-        // let audio = AudioOutput::default();
+        let audio = AudioOutput::default();
         SystemContext {
             video,
             assets: assets.clone(),
-            // audio,
+            audio,
             input: Input::new(),
             frame_profile: Profile::new(PROFILE_SAMPLES),
             render_profile: Profile::new(PROFILE_SAMPLES),
@@ -48,13 +49,17 @@ impl SystemContext {
         &self.video
     }
 
-    // pub fn audio_mut(&mut self) -> &mut AudioOutput {
-    //     &mut self.audio
-    // }
+    pub fn audio_mut(&mut self) -> &mut AudioOutput {
+        &mut self.audio
+    }
 
-    // pub fn play_sound(&mut self, sound: &AudioSource) {
-    //     self.audio.play_source(sound);
-    // }
+    pub fn audio(&self) -> &AudioOutput {
+        &self.audio
+    }
+
+    pub fn play_sound(&mut self, sound: &AudioSource) {
+        self.audio.play_source(sound);
+    }
 
     pub fn assets(&self) -> &Assets {
         &self.assets
@@ -98,23 +103,5 @@ impl SystemContext {
 
     pub fn update_profile(&self) -> &Profile {
         &self.update_profile
-    }
-
-    pub fn fill_profile_buffer(&self, buffer: &mut [[f32; 4]; PROFILE_SAMPLES]) {
-        let frame_iter = self.frame_profile.duration_buffer.iter();
-        let mut update_iter = self.update_profile.duration_buffer.iter();
-        let mut render_iter = self.render_profile.duration_buffer.iter();
-        let mut swap_iter = self.swap_profile.duration_buffer.iter();
-        let mut index = 0;
-        for frame_duration in frame_iter {
-            let update_duration = update_iter.next().unwrap();
-            let render_duration = render_iter.next().unwrap();
-            let swap_duration = swap_iter.next().unwrap();
-            buffer[index][0] = frame_duration - update_duration - render_duration - swap_duration;
-            buffer[index][1] = *update_duration;
-            buffer[index][2] = *render_duration;
-            buffer[index][3] = *swap_duration;
-            index += 1;
-        }
     }
 }

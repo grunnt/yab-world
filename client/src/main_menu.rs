@@ -37,7 +37,7 @@ impl State<GameContext> for MainMenuState {
         data: &mut GameContext,
         gui: &egui::Context,
         _input_events: &Vec<InputEvent>,
-        _system: &mut SystemContext,
+        system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
         egui::SidePanel::left("Main").show(gui, |ui| {
@@ -47,6 +47,7 @@ impl State<GameContext> for MainMenuState {
                     ui.heading("YAB-World");
                     ui.separator();
                     if ui.button("Continue").clicked() {
+                        system.audio().play_sound("click");
                         if self.continue_save.is_some() {
                             let save = self.continue_save.as_ref().unwrap();
                             debug!("Continue game");
@@ -61,21 +62,25 @@ impl State<GameContext> for MainMenuState {
                         }
                     }
                     if ui.button("New").clicked() {
+                        system.audio().play_sound("click");
                         state_command = StateCommand::OpenState {
                             state: Box::new(NewGameState::new()),
                         };
                     }
                     if ui.button("Load").clicked() {
+                        system.audio().play_sound("click");
                         state_command = StateCommand::OpenState {
                             state: Box::new(LoadGameState::new()),
                         };
                     }
                     if ui.button("Join").clicked() {
+                        system.audio().play_sound("click");
                         state_command = StateCommand::OpenState {
                             state: Box::new(JoinGameState::new()),
                         };
                     }
                     if ui.button("Settings").clicked() {
+                        system.audio().play_sound("click");
                         state_command = StateCommand::OpenState {
                             state: Box::new(SettingsState::new()),
                         };

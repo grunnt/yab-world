@@ -25,7 +25,7 @@ impl State<GameContext> for LoadGameState {
         data: &mut GameContext,
         gui: &egui::Context,
         _input_events: &Vec<InputEvent>,
-        _context: &mut SystemContext,
+        system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
         egui::SidePanel::left("Load").show(gui, |ui| {
@@ -50,6 +50,7 @@ impl State<GameContext> for LoadGameState {
                                             ))
                                             .clicked()
                                         {
+                                            system.audio().play_sound("click");
                                             data.server_address =
                                                 Some(format!("0.0.0.0:{}", DEFAULT_TCP_PORT));
                                             data.connect_to_address =
@@ -65,6 +66,7 @@ impl State<GameContext> for LoadGameState {
                         });
                     ui.separator();
                     if ui.button("Back").clicked() {
+                        system.audio().play_sound("click");
                         state_command = StateCommand::CloseState;
                     }
                 },

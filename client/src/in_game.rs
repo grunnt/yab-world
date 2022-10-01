@@ -1,7 +1,10 @@
+use crate::block_button::*;
 use crate::{block_select::BlockSelectState, *};
 use common::block::*;
 use common::inventory::Inventory;
 use common::{chunk::*, player::PlayerData};
+use egui::plot::{Line, PlotPoints};
+use egui::Align2;
 use floating_duration::TimeAsFloat;
 use gamework::{InputEvent, MouseButton};
 use gamework::{Key, StateCommand};
@@ -27,7 +30,7 @@ pub struct InGameState {
     out_of_range_columns: HashSet<ChunkColumnPos>,
     block_place_timer: f32,
     block_remove_timer: f32,
-    gui_visible: bool,
+    show_debug_gui: bool,
 }
 
 impl InGameState {
@@ -50,7 +53,7 @@ impl InGameState {
             out_of_range_columns: HashSet::new(),
             block_remove_timer: 0.0,
             block_place_timer: 0.0,
-            gui_visible: true,
+            show_debug_gui: false,
         }
     }
 
@@ -65,39 +68,39 @@ impl InGameState {
     fn handle_event(
         &mut self,
         event: &InputEvent,
-        data: &mut GameContext,
-        context: &mut SystemContext,
+        context: &mut GameContext,
+        system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         match event {
             InputEvent::MouseMove { dx, dy, .. } => {
-                if context.input().get_mouse_captured() {
+                if system.input().get_mouse_captured() {
                     self.rendering_mut().camera.rotate(
-                        *dx as f32 * data.config.camera_sensitivity_x * 0.0025,
-                        *dy as f32 * data.config.camera_sensitivity_y * 0.0025,
+                        *dx as f32 * context.config.camera_sensitivity_x * 0.0025,
+                        *dy as f32 * context.config.camera_sensitivity_y * 0.0025,
                     );
                 }
             }
             InputEvent::KeyPress { key, shift } => match key {
                 Key::Space => {
-                    let object = data.physics_mut().get_object_mut(self.player_body);
+                    let object = context.physics_mut().get_object_mut(self.player_body);
                     if object.on_ground && !self.player_flying {
                         object.velocity.z = object.velocity.z.max(MIN_JUMP_VELOCITY);
-                        // context.audio_mut().play_sound("jump");
+                        system.audio_mut().play_sound("jump");
                     }
                 }
                 Key::Tab => {
-                    context.input_mut().set_mouse_captured(false);
+                    system.input_mut().set_mouse_captured(false);
                     return StateCommand::OpenState {
                         state: Box::new(BlockSelectState::new(
-                            &data.block_registry,
-                            &data.inventory,
+                            &context.block_registry,
+                            &context.inventory,
                         )),
                     };
                 }
                 Key::X => {
-                    let captured = context.input().get_mouse_captured();
-                    context.input_mut().set_mouse_captured(!captured);
-                    debug!("Mouse captured: {}", context.input().get_mouse_captured());
+                    let captured = system.input().get_mouse_captured();
+                    system.input_mut().set_mouse_captured(!captured);
+                    debug!("Mouse captured: {}", system.input().get_mouse_captured());
                 }
                 Key::I => {
                     self.debug_info = !self.debug_info;
@@ -111,19 +114,20 @@ impl InGameState {
                 Key::F => {
                     if *shift {
                         self.player_flying = !self.player_flying;
-                        data.physics_mut()
+                        context
+                            .physics_mut()
                             .set_object_colliding(self.player_body, !self.player_flying);
                         debug!("Player flying: {}", self.player_flying);
                     }
                 }
                 Key::Escape => {
-                    if let Some(server) = &mut data.server {
+                    if let Some(server) = &mut context.server {
                         server.shutdown("server player exiting game".to_string());
                     }
-                    context.input_mut().set_mouse_captured(false);
+                    system.input_mut().set_mouse_captured(false);
                     return StateCommand::CloseState;
                 }
-                Key::G => self.gui_visible = !self.gui_visible,
+                Key::G => self.show_debug_gui = !self.show_debug_gui,
                 _ => (),
             },
             _ => {}
@@ -133,17 +137,17 @@ impl InGameState {
 
     fn handle_game_input(
         &mut self,
-        context: &mut SystemContext,
-        data: &mut GameContext,
+        system: &mut SystemContext,
+        context: &mut GameContext,
         delta: f32,
     ) {
-        if !context.input().get_mouse_captured() {
+        if !system.input().get_mouse_captured() {
             return;
         }
-        if context.input().is_mouse_button_down(MouseButton::Right) {
+        if system.input().is_mouse_button_down(MouseButton::Right) {
             if self.block_place_timer <= std::f32::EPSILON {
                 // Place a block
-                if let Some(hit) = data.world().cast_ray(
+                if let Some(hit) = context.world().cast_ray(
                     &self.rendering().camera().position,
                     self.rendering().camera().get_direction(),
                     8.0,
@@ -154,18 +158,18 @@ impl InGameState {
                         (hit.hit_block_pos.y + hit.hit_norm.y).floor() as i16,
                         (hit.hit_block_pos.z + hit.hit_norm.z).floor() as i16,
                     );
-                    if data.world().chunks.are_all_neighbours_stored(
+                    if context.world().chunks.are_all_neighbours_stored(
                         ChunkColumnPos::from_world_block_coords(wbx, wby),
                     ) {
-                        if !data.is_occopied_by_body(wbx, wby, wbz) {
+                        if !context.is_occopied_by_body(wbx, wby, wbz) {
                             // Do we have sufficient resources?
-                            let selected_block = data.selected_block.kind();
-                            if data.inventory.count(selected_block) > 0 {
+                            let selected_block = context.selected_block.kind();
+                            if context.inventory.count(selected_block) > 0 {
                                 // Remove resources from inventory
-                                data.inventory.remove(selected_block, 1);
+                                context.inventory.remove(selected_block, 1);
                                 // Place block
-                                let block = data.block_registry.set_block_flags(selected_block);
-                                data.world_mut().set_block_add_dirty(
+                                let block = context.block_registry.set_block_flags(selected_block);
+                                context.world_mut().set_block_add_dirty(
                                     wbx,
                                     wby,
                                     wbz,
@@ -173,7 +177,8 @@ impl InGameState {
                                     &mut self.changed_chunks_to_mesh,
                                 );
                                 // Send change to the server
-                                data.comms_client_mut()
+                                context
+                                    .comms_client_mut()
                                     .send(ClientMessage::SetBlock {
                                         wbx,
                                         wby,
@@ -181,7 +186,7 @@ impl InGameState {
                                         block: selected_block,
                                     })
                                     .unwrap();
-                                // context.audio_mut().play_sound("build");
+                                system.audio_mut().play_sound("build");
                             } else {
                                 debug!(
                                     "Insufficient resources to place block {:?}",
@@ -199,18 +204,19 @@ impl InGameState {
             self.block_place_timer = 0.0;
         }
         // Remove a block
-        let dig_beam_emitter_handle = data.dig_beam_emitter_handle;
+        let dig_beam_emitter_handle = context.dig_beam_emitter_handle;
         let mut dig_beam_active = false;
-        if context.input().is_mouse_button_down(MouseButton::Left) {
-            if let Some(hit) = data.world().cast_ray(
+        if system.input().is_mouse_button_down(MouseButton::Left) {
+            if let Some(hit) = context.world().cast_ray(
                 &self.rendering().camera.position,
                 self.rendering().camera.get_direction(),
                 8.0,
                 false,
             ) {
                 dig_beam_active = true;
-                let player_target_handle = data.player_target_handle;
-                data.particles_mut()
+                let player_target_handle = context.player_target_handle;
+                context
+                    .particles_mut()
                     .update_position_handle(player_target_handle, hit.hit_pos);
                 self.block_remove_timer += delta;
                 if self.block_remove_timer > BLOCK_REMOVE_TIME_S {
@@ -220,19 +226,19 @@ impl InGameState {
                         (hit.hit_block_pos.y).floor() as i16,
                         (hit.hit_block_pos.z).floor() as i16,
                     );
-                    let block = data.world().chunks.get_block(wbx, wby, wbz);
-                    data.dig_effect(Vec3::new(
+                    let block = context.world().chunks.get_block(wbx, wby, wbz);
+                    context.dig_effect(Vec3::new(
                         wbx as f32 + 0.5,
                         wby as f32 + 0.5,
                         wbz as f32 + 0.5,
                     ));
-                    if data.world().chunks.are_all_neighbours_stored(
+                    if context.world().chunks.are_all_neighbours_stored(
                         ChunkColumnPos::from_world_block_coords(wbx, wby),
                     ) {
                         // Add block to inventory
-                        data.inventory.add(block.kind(), 1);
+                        context.inventory.add(block.kind(), 1);
                         // Clear the block
-                        data.world_mut().set_block_add_dirty(
+                        context.world_mut().set_block_add_dirty(
                             wbx,
                             wby,
                             wbz,
@@ -240,7 +246,8 @@ impl InGameState {
                             &mut self.changed_chunks_to_mesh,
                         );
                         // Send change to the server
-                        data.comms_client_mut()
+                        context
+                            .comms_client_mut()
                             .send(ClientMessage::SetBlock {
                                 wbx,
                                 wby,
@@ -250,13 +257,14 @@ impl InGameState {
                             .unwrap();
                     }
                     self.block_remove_timer -= BLOCK_REMOVE_TIME_S;
-                    // context.audio_mut().play_sound("build");
+                    system.audio_mut().play_sound("build");
                 }
             }
         } else {
             self.block_remove_timer = 0.0;
         }
-        data.particles_mut()
+        context
+            .particles_mut()
             .emitter_mut(dig_beam_emitter_handle)
             .unwrap()
             .active = dig_beam_active;
@@ -300,23 +308,80 @@ impl State<GameContext> for InGameState {
     fn update(
         &mut self,
         delta: f32,
-        data: &mut GameContext,
+        context: &mut GameContext,
         gui: &egui::Context,
         input_events: &Vec<InputEvent>,
-        context: &mut SystemContext,
+        system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
-        // context.fill_profile_buffer(self.profile_chart().buffer_mut());
+        let player_position = context
+            .physics()
+            .get_object_position(self.player_body)
+            .clone();
 
-        // Update selected block label
-        // let block_count = data.inventory.count(data.selected_block.kind());
-        // let text = format!(
-        //     "{} ({})",
-        //     data.block_registry.get(data.selected_block).name,
-        //     block_count
-        // );
+        // Show the selected block
+        egui::Area::new("selected_block")
+            .anchor(Align2::LEFT_BOTTOM, [5.0, -5.0])
+            .show(gui, |ui| {
+                let block = context.block_registry.get(context.selected_block);
+                let count = context.inventory.count(context.selected_block);
+                let preview_size = egui::Vec2::new(48.0, 48.0);
+                if let Some(preview_texture) =
+                    context.gui_images.get(&format!("preview_{}", block.code))
+                {
+                    block_button(ui, preview_texture, preview_size, count);
+                }
+            });
+
+        // Show the profiler
+        if self.show_debug_gui {
+            egui::Area::new("profiler")
+                .anchor(Align2::RIGHT_TOP, [-5.0, 5.0])
+                .show(gui, |ui| {
+                    let frame_times: PlotPoints = system
+                        .frame_profile()
+                        .duration_buffer
+                        .iter()
+                        .enumerate()
+                        .map(|(i, t)| [i as f64, *t as f64])
+                        .collect();
+                    let frame_time_line = Line::new(frame_times);
+                    let render_times: PlotPoints = system
+                        .render_profile()
+                        .duration_buffer
+                        .iter()
+                        .enumerate()
+                        .map(|(i, t)| [i as f64, *t as f64])
+                        .collect();
+                    let render_time_line = Line::new(render_times);
+                    egui::plot::Plot::new("example_plot")
+                        .height(32.0)
+                        .width(256.0)
+                        .show_axes([false, false])
+                        .show_x(false)
+                        .show_y(false)
+                        .include_y(1.0)
+                        .show(ui, |plot_ui| {
+                            plot_ui.line(frame_time_line);
+                            plot_ui.line(render_time_line);
+                        })
+                        .response;
+                    ui.label(format!(
+                        "{}fps max {}ms avg {}ms",
+                        system.frame_profile().fps as i32,
+                        system.frame_profile().max_ms as i32,
+                        system.frame_profile().avg_ms as i32
+                    ));
+                    ui.label(format!(
+                        "Position {},{},{}",
+                        player_position.x as i32,
+                        player_position.y as i32,
+                        player_position.z as i32
+                    ));
+                });
+        }
 
         for event in input_events {
-            let state_command = self.handle_event(event, data, context);
+            let state_command = self.handle_event(event, context, system);
             match state_command {
                 StateCommand::None => {}
                 _ => {
@@ -324,54 +389,64 @@ impl State<GameContext> for InGameState {
                 }
             }
         }
-        self.handle_game_input(context, data, delta);
+        self.handle_game_input(system, context, delta);
 
         self.rendering_mut().camera.update();
 
         // Generate spash sound if going into or out of water
         let player_handle = self.player_body;
-        let player_object = data.physics().get_object(player_handle);
+        let player_object = context.physics().get_object(player_handle);
         if player_object.in_water != player_object.was_in_water {
-            // context.audio_mut().play_sound("splash");
+            system.audio_mut().play_sound("splash");
         }
 
-        data.daynight.update(delta);
+        context.daynight.update(delta);
 
         let camera = self.rendering().camera().clone();
         let camera_direction = camera.get_direction().clone();
         let frustum = self.rendering().camera().frustum_checker();
 
-        data.physics_mut()
+        context
+            .physics_mut()
             .set_object_facing(player_handle, &camera_direction);
         let controls = PhysicsObjectControls {
-            left: context.input().key_pressed(Key::A),
-            right: context.input().key_pressed(Key::D),
-            forward: context.input().key_pressed(Key::W),
-            backward: context.input().key_pressed(Key::S),
-            up: context.input().key_pressed(Key::Space),
-            down: context.input().key_pressed(Key::LCtrl),
-            slower: context.input().key_pressed(Key::LShift),
+            left: system.input().key_pressed(Key::A),
+            right: system.input().key_pressed(Key::D),
+            forward: system.input().key_pressed(Key::W),
+            backward: system.input().key_pressed(Key::S),
+            up: system.input().key_pressed(Key::Space),
+            down: system.input().key_pressed(Key::LCtrl),
+            slower: system.input().key_pressed(Key::LShift),
         };
         let on_ground = if self.player_flying {
             false
         } else {
-            data.physics_mut().get_object_mut(player_handle).on_ground
+            context
+                .physics_mut()
+                .get_object_mut(player_handle)
+                .on_ground
         };
         if controls.is_moving() && on_ground {
-            if camera.position.metric_distance(&data.last_sound_position) > 2.0 {
-                // context.audio_mut().play_sound("step");
-                data.last_sound_position = camera.position;
+            if camera
+                .position
+                .metric_distance(&context.last_sound_position)
+                > 2.0
+            {
+                system.audio_mut().play_sound("step");
+                context.last_sound_position = camera.position;
             }
         }
-        data.physics_mut()
+        context
+            .physics_mut()
             .set_object_controls(player_handle, controls);
 
         // -------- Networking --------
         // Do we need to send a position update to the server?
-        let last_position = data.last_position.clone();
-        if data.last_pos_update_time.elapsed().as_fractional_secs() > POS_UPDATE_INTERVAL {
+        let last_position = context.last_position.clone();
+        if context.last_pos_update_time.elapsed().as_fractional_secs() > POS_UPDATE_INTERVAL {
             if camera.position != last_position {
-                data.comms_client_mut()
+                context
+                    .comms_client_mut()
                     .send(ClientMessage::PositionUpdate {
                         x: camera.position.x,
                         y: camera.position.y,
@@ -380,9 +455,9 @@ impl State<GameContext> for InGameState {
                         pitch: camera.pitch,
                     })
                     .unwrap();
-                data.last_position = camera.position;
+                context.last_position = camera.position;
             }
-            data.last_pos_update_time = Instant::now();
+            context.last_pos_update_time = Instant::now();
         }
 
         // Show camera position
@@ -403,21 +478,22 @@ impl State<GameContext> for InGameState {
         let cam_chunk_col = ChunkColumnPos::from_chunk_pos(cam_cp);
         if cam_chunk_col != self.buffer_col {
             self.buffer_col = cam_chunk_col;
-            data.world_mut().set_buffer_position(self.buffer_col);
+            context.world_mut().set_buffer_position(self.buffer_col);
         }
 
         if let Some(col) = pop(&mut self.out_of_range_columns) {
             let mut columns = HashSet::new();
-            data.world_mut().remove_column(&col);
+            context.world_mut().remove_column(&col);
             columns.insert(col);
-            data.block_renderer_mut().remove_col_set(&columns);
-            data.comms_client_mut()
+            context.block_renderer_mut().remove_col_set(&columns);
+            context
+                .comms_client_mut()
                 .send(ClientMessage::Unsubscribe { columns })
                 .unwrap();
         }
 
         // Any incoming messages from the server?
-        while let Some(message) = data.comms_client_mut().try_receive() {
+        while let Some(message) = context.comms_client_mut().try_receive() {
             match message {
                 ServerMessage::SetBlock {
                     wbx,
@@ -425,8 +501,8 @@ impl State<GameContext> for InGameState {
                     wbz,
                     block,
                 } => {
-                    let block = data.block_registry.set_block_flags(block);
-                    data.world_mut().set_block_add_dirty(
+                    let block = context.block_registry.set_block_flags(block);
+                    context.world_mut().set_block_add_dirty(
                         wbx,
                         wby,
                         wbz,
@@ -453,7 +529,7 @@ impl State<GameContext> for InGameState {
                         "Player {} ({}) spawned at {},{},{}",
                         username, player_id, x, y, z
                     );
-                    data.players.push(PlayerData {
+                    context.players.push(PlayerData {
                         player_id,
                         x,
                         y,
@@ -466,7 +542,7 @@ impl State<GameContext> for InGameState {
                 }
                 ServerMessage::PlayerDespawn { player_id } => {
                     info!("Player {} despawned", player_id);
-                    data.players.retain(|p| p.player_id != player_id);
+                    context.players.retain(|p| p.player_id != player_id);
                 }
                 ServerMessage::PositionUpdate {
                     x,
@@ -476,7 +552,7 @@ impl State<GameContext> for InGameState {
                     pitch,
                     player_id,
                 } => {
-                    for player in &mut data.players {
+                    for player in &mut context.players {
                         if player.player_id == player_id {
                             player.x = x;
                             player.y = y;
@@ -496,7 +572,7 @@ impl State<GameContext> for InGameState {
         // See if any generated columns were received from the server.
         // This is done seperately from the columns themselves as they are only received
         // when light has been propagated.
-        while let Some((_, status)) = data.world_mut().try_receive_status() {
+        while let Some((_, status)) = context.world_mut().try_receive_status() {
             if status == ColumnStatus::Received && self.open_column_requests > 0 {
                 // debug!("Received {:?}", col);
                 self.open_column_requests -= 1;
@@ -504,13 +580,13 @@ impl State<GameContext> for InGameState {
         }
 
         // Any fresh columns received from the server?
-        data.world_mut().try_receive_columns();
+        context.world_mut().try_receive_columns();
 
         // Request new generator work if needed
         if self.open_column_requests < MAX_OPEN_COLUMN_REQUESTS {
             let mut columns = Vec::new();
             while self.open_column_requests < MAX_OPEN_COLUMN_REQUESTS {
-                if let Some(col) = data.world_mut().get_next_request(Some(&frustum)) {
+                if let Some(col) = context.world_mut().get_next_request(Some(&frustum)) {
                     // debug!("Requested {:?}", col);
                     columns.push(col);
                     self.open_column_requests += 1;
@@ -519,7 +595,8 @@ impl State<GameContext> for InGameState {
                 }
             }
             if !columns.is_empty() {
-                data.comms_client_mut()
+                context
+                    .comms_client_mut()
                     .send(ClientMessage::Subscribe { columns })
                     .unwrap();
             }
@@ -528,31 +605,36 @@ impl State<GameContext> for InGameState {
         // -------- Physics --------
         self.delta_accumulator += delta;
         while self.delta_accumulator >= PHYSICS_TIME_STEP {
-            data.step_physics();
+            context.step_physics();
             self.delta_accumulator -= PHYSICS_TIME_STEP;
         }
 
-        let pos = data.physics().get_object_position(self.player_body).clone();
-        self.rendering_mut().camera.position.x = pos.x;
-        self.rendering_mut().camera.position.y = pos.y;
-        self.rendering_mut().camera.position.z = pos.z + CAMERA_Z_OFFSET;
+        self.rendering_mut().camera.position.x = player_position.x;
+        self.rendering_mut().camera.position.y = player_position.y;
+        self.rendering_mut().camera.position.z = player_position.z + CAMERA_Z_OFFSET;
 
         // -------- Meshing --------
 
         // Receive new meshes from mesher thread
-        if let Some((cp, vertices, translucent_vertices)) = data.world_mut().try_receive_vertices()
+        if let Some((cp, vertices, translucent_vertices)) =
+            context.world_mut().try_receive_vertices()
         {
-            if let Some(mesh) = BlockMesh::new(context.video().gl(), &vertices, true) {
-                if data.block_renderer().meshes.contains_key(&cp) {
+            if let Some(mesh) = BlockMesh::new(system.video().gl(), &vertices, true) {
+                if context.block_renderer().meshes.contains_key(&cp) {
                     warn!("Duplicate mesh for {:?}", cp);
                 }
-                data.block_renderer_mut().insert_mesh_pos(cp, mesh);
+                context.block_renderer_mut().insert_mesh_pos(cp, mesh);
             }
-            if let Some(mesh) = BlockMesh::new(context.video().gl(), &translucent_vertices, true) {
-                if data.block_renderer().translucent_meshes.contains_key(&cp) {
+            if let Some(mesh) = BlockMesh::new(system.video().gl(), &translucent_vertices, true) {
+                if context
+                    .block_renderer()
+                    .translucent_meshes
+                    .contains_key(&cp)
+                {
                     warn!("Duplicate mesh for {:?}", cp);
                 }
-                data.block_renderer_mut()
+                context
+                    .block_renderer_mut()
                     .insert_translucent_mesh_pos(cp, mesh);
             }
         }
@@ -563,33 +645,34 @@ impl State<GameContext> for InGameState {
         for cp in &mesh_list {
             let cp = *cp;
             let col = ChunkColumnPos::from_chunk_pos(cp);
-            if data.world().chunks.are_all_neighbours_propagated(col) && cp.z >= 0 {
+            if context.world().chunks.are_all_neighbours_propagated(col) && cp.z >= 0 {
                 let (vertices, translucent_vertices) = self
                     .rendering()
                     .world_mesher
-                    .mesh_chunk(cp, &data.world().chunks);
-                if let Some(mesh) = BlockMesh::new(context.video().gl(), &vertices, false) {
-                    data.block_renderer_mut().insert_mesh_pos(cp, mesh);
+                    .mesh_chunk(cp, &context.world().chunks);
+                if let Some(mesh) = BlockMesh::new(system.video().gl(), &vertices, false) {
+                    context.block_renderer_mut().insert_mesh_pos(cp, mesh);
                 } else {
-                    data.block_renderer_mut().remove_mesh_pos(cp);
+                    context.block_renderer_mut().remove_mesh_pos(cp);
                 }
                 if let Some(mesh) =
-                    BlockMesh::new(context.video().gl(), &translucent_vertices, false)
+                    BlockMesh::new(system.video().gl(), &translucent_vertices, false)
                 {
-                    data.block_renderer_mut()
+                    context
+                        .block_renderer_mut()
                         .insert_translucent_mesh_pos(cp, mesh);
                 } else {
-                    data.block_renderer_mut().remove_translucent_mesh_pos(cp);
+                    context.block_renderer_mut().remove_translucent_mesh_pos(cp);
                 }
             }
         }
 
-        let player_position_handle = data.player_position_handle;
-        data.particles_mut().update_position_handle(
+        let player_position_handle = context.player_position_handle;
+        context.particles_mut().update_position_handle(
             player_position_handle,
             self.rendering().camera().position + Vec3::new(0.0, 0.0, -0.25),
         );
-        data.particles.as_mut().unwrap().update(delta);
+        context.particles.as_mut().unwrap().update(delta);
 
         // self.profile_chart().update(context);
 

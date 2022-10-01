@@ -6,6 +6,7 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ClientConfig {
     pub render_range_chunks: u16,
+    pub sound_effect_volume: f32,
     pub camera_sensitivity_x: f32,
     pub camera_sensitivity_y: f32,
 }
@@ -14,6 +15,7 @@ impl ClientConfig {
     pub fn defaults() -> Self {
         ClientConfig {
             render_range_chunks: 16,
+            sound_effect_volume: 1.0,
             camera_sensitivity_x: 1.0,
             camera_sensitivity_y: 1.0,
         }

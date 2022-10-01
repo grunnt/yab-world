@@ -1,4 +1,5 @@
 use crate::*;
+use egui::Context;
 use floating_duration::TimeAsFloat;
 use glow::*;
 use glutin::event::{ElementState, Event, WindowEvent};
@@ -24,8 +25,8 @@ impl App {
         opengl_minor: u8,
         starting_state: Box<dyn State<GameContext>>,
         assets: &Assets,
-        mut data: GameContext,
-        setup: Box<dyn Fn(&mut GameContext, &mut SystemContext) -> ()>,
+        mut game_context: GameContext,
+        setup: Box<dyn Fn(&mut GameContext, &mut SystemContext, &mut Context) -> ()>,
     ) {
         let debug_opengl = true;
 
@@ -70,11 +71,11 @@ impl App {
         let scale_factor = 1.0;
         let mut system = SystemContext::new(gl, width, height, scale_factor, assets);
 
-        data.initialize(&mut system);
+        game_context.initialize(&mut system);
 
-        setup(&mut data, &mut system);
+        setup(&mut game_context, &mut system, &mut egui_glow.egui_ctx);
 
-        let mut state_manager = StateManager::new(data);
+        let mut state_manager = StateManager::new(game_context);
         state_manager.activate(starting_state, &mut system);
 
         let mut time = Instant::now();
@@ -278,7 +279,7 @@ impl App {
 }
 
 // Install a debug logging callback in the OpenGL context. Synchronous mode helps finding error causes but is much slower.
-fn enable_opengl_logging(gl: &Context, synchronous: bool) {
+fn enable_opengl_logging(gl: &glow::Context, synchronous: bool) {
     let callback = |gl_source: u32, gl_type: u32, gl_id: u32, severity: u32, text: &str| {
         let log_level = match severity {
             glow::DEBUG_SEVERITY_HIGH => Level::Error,

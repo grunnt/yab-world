@@ -1,4 +1,5 @@
 mod block_button;
+pub mod block_preview_generator;
 mod block_select;
 mod client_config;
 mod game_context;
@@ -19,9 +20,10 @@ use self::render::*;
 use common::comms::*;
 use common::world_definition::*;
 use common::world_type::GeneratorType;
+use egui::Rounding;
 use game_context::GameContext;
 pub use gamework::glow;
-use gamework::video::color::ColorRGB;
+use gamework::video::color::ColorRGBA;
 use gamework::*;
 use log::*;
 use main_menu::*;
@@ -31,6 +33,9 @@ use physics::physicsobject::*;
 use rand::Rng;
 use start_game::StartGameState;
 use std::collections::HashSet;
+use std::fs;
+use std::fs::File;
+use std::io::Read;
 use std::time::Instant;
 
 const MAX_OPEN_COLUMN_REQUESTS: usize = 6;
@@ -116,15 +121,49 @@ impl YabClient {
     }
 }
 
-fn setup(_game: &mut GameContext, system: &mut SystemContext) {
+fn setup(_game: &mut GameContext, system: &mut SystemContext, gui: &mut egui::Context) {
     system
         .video_mut()
-        .set_background_color(&ColorRGB::new(0.1, 0.1, 0.1));
-    // let sounds = vec!["click", "step", "jump", "build", "splash"];
-    // for sound in &sounds {
-    //     let path = system
-    //         .assets()
-    //         .assets_path(format!("sounds/{}.wav", sound).as_str());
-    //     system.audio_mut().load_sound(&path);
-    // }
+        .set_background_color(&ColorRGBA::new(0.1, 0.1, 0.1, 1.0));
+
+    // Load custom font
+    let mut fonts = egui::FontDefinitions::default();
+    let font_path = system.assets().path("font.ttf");
+    let mut f = File::open(&font_path).expect("no file found");
+    let metadata = fs::metadata(&font_path).expect("unable to read metadata");
+    let mut buffer = vec![0; metadata.len() as usize];
+    f.read(&mut buffer).expect("buffer overflow");
+    fonts
+        .font_data
+        .insert("pixelfont".to_owned(), egui::FontData::from_owned(buffer));
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, "pixelfont".to_owned());
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .insert(0, "pixelfont".to_owned());
+    gui.set_fonts(fonts);
+
+    // Change gui visuals
+    let mut visuals = egui::Visuals::default();
+    visuals.window_rounding = Rounding::none();
+    visuals.widgets.active.rounding = Rounding::none();
+    visuals.widgets.inactive.rounding = Rounding::none();
+    visuals.widgets.noninteractive.rounding = Rounding::none();
+    visuals.widgets.hovered.rounding = Rounding::none();
+    visuals.widgets.open.rounding = Rounding::none();
+    gui.set_visuals(visuals);
+
+    // Load sounds
+    let sounds = vec!["click", "step", "jump", "build", "splash"];
+    for sound in &sounds {
+        let path = system
+            .assets()
+            .path(format!("sounds/{}.wav", sound).as_str());
+        system.audio_mut().load_sound(&path);
+    }
 }

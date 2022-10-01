@@ -21,10 +21,10 @@ impl State<GameContext> for JoinGameState {
     fn update(
         &mut self,
         _delta: f32,
-        data: &mut GameContext,
+        context: &mut GameContext,
         gui: &egui::Context,
         _input_events: &Vec<InputEvent>,
-        _context: &mut SystemContext,
+        system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
         egui::SidePanel::left("Join").show(gui, |ui| {
@@ -37,6 +37,7 @@ impl State<GameContext> for JoinGameState {
                     ui.add(egui::TextEdit::singleline(&mut self.address));
                     ui.separator();
                     if ui.button("Join").clicked() {
+                        system.audio().play_sound("click");
                         let server_address = format!("{}:{}", self.address, DEFAULT_TCP_PORT);
                         let server_address = if server_address == "localhost" {
                             "127.1.1.1".to_string()
@@ -44,12 +45,13 @@ impl State<GameContext> for JoinGameState {
                             server_address
                         };
                         debug!("Join server at address {}", server_address);
-                        data.connect_to_address = Some(server_address);
+                        context.connect_to_address = Some(server_address);
                         state_command = StateCommand::OpenState {
                             state: Box::new(StartGameState::new()),
                         };
                     }
                     if ui.button("Back").clicked() {
+                        system.audio().play_sound("click");
                         state_command = StateCommand::CloseState;
                     }
                 },

@@ -17,11 +17,11 @@ use crossbeam::channel::*;
 use crossbeam::unbounded;
 use floating_duration::TimeAsFloat;
 use gamework::profile::Profile;
+use gamework::Assets;
 use glm::Vec3;
 use log::*;
 use player_store::PlayerStore;
 use rand::Rng;
-use std::path::PathBuf;
 use std::thread::{sleep, Builder};
 use std::time::{Duration, Instant};
 
@@ -53,14 +53,8 @@ impl YabServer {
             .spawn(move || {
                 let world_list = WorldsStore::new();
                 let world_folder = world_list.get_world_path(seed);
-                // TODO fix dynamic loading of blocks json (from world folder if present, otherwise default)
-                // Also make sure its copied to assets folder (better yet, place it there?)
-                let data_path = if world_folder.exists() {
-                    world_folder.clone()
-                } else { 
-                    PathBuf::from("server_data") 
-                };
-                let block_registry = BlockRegistry::load_or_create(&PathBuf::from("server_data") );
+                let assets = Assets::new("assets");
+                let block_registry =  BlockRegistry::load_or_create(&assets.path("blocks.json") ).unwrap();
                 debug!("Server block registry contains {} blocks", block_registry.all_blocks().len());
 
                 let mut world = if world_folder.exists() {

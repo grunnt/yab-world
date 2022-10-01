@@ -45,6 +45,7 @@ impl Decodable for AudioSource {
 }
 
 pub struct AudioOutput {
+    pub volume: f32,
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
     sounds: HashMap<String, AudioSource>,
@@ -55,6 +56,7 @@ impl Default for AudioOutput {
         let (stream, stream_handle) = OutputStream::try_default().unwrap();
 
         Self {
+            volume: 1.0,
             _stream: stream,
             stream_handle,
             sounds: HashMap::new(),
@@ -63,21 +65,22 @@ impl Default for AudioOutput {
 }
 
 impl AudioOutput {
-    pub fn play_source(&self, audio_source: &AudioSource) {
-        let sink = Sink::try_new(&self.stream_handle).unwrap();
-        sink.append(audio_source.decoder());
-        sink.detach();
-    }
-
     pub fn load_sound(&mut self, path: &Path) {
         let sound_name = path.file_stem().unwrap().to_str().unwrap().to_string();
         let sound = AudioSource::load(path);
         self.sounds.insert(sound_name, sound);
     }
 
-    pub fn play_sound(&mut self, sound_name: &str) {
+    pub fn play_sound(&self, sound_name: &str) {
         if let Some(source) = self.sounds.get(sound_name) {
             self.play_source(source);
         }
+    }
+
+    pub fn play_source(&self, audio_source: &AudioSource) {
+        let sink = Sink::try_new(&self.stream_handle).unwrap();
+        sink.set_volume(self.volume);
+        sink.append(audio_source.decoder());
+        sink.detach();
     }
 }

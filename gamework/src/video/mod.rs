@@ -16,7 +16,6 @@ use std::sync::Arc;
 
 pub use buffer::*;
 pub use camera::*;
-use color::ColorRGB;
 pub use data::*;
 pub use framebuffer::FBO;
 pub use glow::*;
@@ -32,13 +31,15 @@ pub use texture_atlas::*;
 
 use crate::Size;
 
+use self::color::ColorRGBA;
+
 pub struct Video {
     gl: Arc<glow::Context>,
     ui_camera: OrthographicCamera,
     width: u32,
     height: u32,
     dpi: f32,
-    background_color: ColorRGB,
+    background_color: ColorRGBA,
 }
 
 impl Video {
@@ -56,7 +57,7 @@ impl Video {
             width,
             height,
             dpi,
-            background_color: ColorRGB::new(0.0, 0.0, 0.0),
+            background_color: ColorRGBA::new(0.0, 0.0, 0.0, 1.0),
         }
     }
 
@@ -101,7 +102,7 @@ impl Video {
                 self.background_color.r,
                 self.background_color.g,
                 self.background_color.b,
-                1.0,
+                self.background_color.a,
             );
             self.gl
                 .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
@@ -112,7 +113,7 @@ impl Video {
         &self.ui_camera
     }
 
-    pub fn set_background_color(&mut self, color: &ColorRGB) {
+    pub fn set_background_color(&mut self, color: &ColorRGBA) {
         self.background_color = color.clone();
     }
 }

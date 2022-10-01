@@ -15,10 +15,10 @@ impl State<GameContext> for SettingsState {
     fn update(
         &mut self,
         _delta: f32,
-        data: &mut GameContext,
+        context: &mut GameContext,
         gui: &egui::Context,
         _input_events: &Vec<InputEvent>,
-        _context: &mut SystemContext,
+        system: &mut SystemContext,
     ) -> StateCommand<GameContext> {
         let mut state_command = StateCommand::None;
         egui::SidePanel::left("Settings").show(gui, |ui| {
@@ -28,11 +28,23 @@ impl State<GameContext> for SettingsState {
                     ui.heading("Settings");
                     ui.separator();
                     ui.add(
-                        egui::Slider::new(&mut data.config.render_range_chunks, 4..=128)
+                        egui::Slider::new(&mut context.config.render_range_chunks, 4..=128)
                             .text("Render distance"),
                     );
+                    if ui
+                        .add(
+                            egui::Slider::new(&mut system.audio_mut().volume, 0.0..=1.0)
+                                .text("Sound effect volume"),
+                        )
+                        .drag_released()
+                    {
+                        system.audio().play_sound("click");
+                    };
                     ui.separator();
                     if ui.button("Back").clicked() {
+                        context.config.sound_effect_volume = system.audio_mut().volume;
+                        context.config.save();
+                        system.audio().play_sound("click");
                         state_command = StateCommand::CloseState;
                     }
                 },

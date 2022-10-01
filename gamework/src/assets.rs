@@ -25,4 +25,8 @@ impl Assets {
     pub fn path(&self, file: &str) -> PathBuf {
         self.assets_path.join(file)
     }
+
+    pub fn root(&self) -> PathBuf {
+        self.assets_path.clone()
+    }
 }
