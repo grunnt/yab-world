@@ -2,11 +2,13 @@
 
 Yet Another Block-World. I made this to learn more about Rust, OpenGL and game development.
 
-[Read more about this on my blog](https://www.basvs.dev/projects/yab-world).
+[Read more about this on my website](https://www.basvs.dev/projects/yab-world).
 
 You can download and run YAB-World for Windows [here](https://github.com/grunnt/yab-world/releases).
 
 ## How to run from source
+
+You will need to have [Rust](https://www.rust-lang.org/) installed.
 
 Simply check out the code and run using:
 ```
@@ -16,13 +18,13 @@ cargo run
 The following optional arguments can be passed:
 - `server`: start a headless server
   - `seed`: set the seed to use for the server
-  - `type`: set the world type to use for the server (`flat`, `water`, `default`).
+  - `type`: set the world type to use for the server (`flat`, `water`, `alien`, `default`).
 - `new`: start the client & server in a new world (handy for quick iteration in development)
 - `continue`: start the client & server and continue the previous world (handy for quick iteration in development)
 
 If no command-line arguments are passed the client starts in the main menu.
 
-## Packing block textures
+## Updating blocks and textures
 
 The texture files used in rendering the blocks are stored in `client\assets\block_textures`. If any changes are made, these should be "packed" into a single file for performance reasons. A texture-packer is built into the application.
 
@@ -30,6 +32,14 @@ This can be done by running yab-world with the `pack` argument. E.g.
 ```
 cargo run pack
 ```
+
+In addition if block textures are changed, there is a new block or a block gets a different texture the "preview" pictures need to be re-generated using the following command:
+
+```
+cargo run block_previews
+```
+
+These commands also work on the built executable.
 
 ## The code 
 
