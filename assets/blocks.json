@@ -121,8 +121,8 @@
     "light": 0
   },
   {
-    "code": "wood",
-    "name": "Wood",
+    "code": "oak_planks",
+    "name": "Oak planks",
     "textures": [
       "oak_planks",
       "oak_planks",
@@ -137,8 +137,8 @@
     "light": 0
   },
   {
-    "code": "log",
-    "name": "Log",
+    "code": "oak_log",
+    "name": "Oak log",
     "textures": [
       "oak_log",
       "oak_log",
@@ -153,15 +153,111 @@
     "light": 0
   },
   {
-    "code": "leaves",
-    "name": "Leaves",
+    "code": "oak_leaves",
+    "name": "Oak leaves",
     "textures": [
-      "leaves",
-      "leaves",
-      "leaves",
-      "leaves",
-      "leaves",
-      "leaves"
+      "oak_leaves",
+      "oak_leaves",
+      "oak_leaves",
+      "oak_leaves",
+      "oak_leaves",
+      "oak_leaves"
+    ],
+    "solid": true,
+    "transparent": true,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "spruce_planks",
+    "name": "Spruce planks",
+    "textures": [
+      "spruce_planks",
+      "spruce_planks",
+      "spruce_planks",
+      "spruce_planks",
+      "spruce_planks",
+      "spruce_planks"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "spruce_log",
+    "name": "Spruce log",
+    "textures": [
+      "spruce_log",
+      "spruce_log",
+      "spruce_log",
+      "spruce_log",
+      "spruce_log_top",
+      "spruce_log_top"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "spruce_leaves",
+    "name": "Spruce leaves",
+    "textures": [
+      "spruce_leaves",
+      "spruce_leaves",
+      "spruce_leaves",
+      "spruce_leaves",
+      "spruce_leaves",
+      "spruce_leaves"
+    ],
+    "solid": true,
+    "transparent": true,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "birch_planks",
+    "name": "Birch planks",
+    "textures": [
+      "birch_planks",
+      "birch_planks",
+      "birch_planks",
+      "birch_planks",
+      "birch_planks",
+      "birch_planks"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "birch_log",
+    "name": "Birch log",
+    "textures": [
+      "birch_log",
+      "birch_log",
+      "birch_log",
+      "birch_log",
+      "birch_log_top",
+      "birch_log_top"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "birch_leaves",
+    "name": "Birch leaves",
+    "textures": [
+      "birch_leaves",
+      "birch_leaves",
+      "birch_leaves",
+      "birch_leaves",
+      "birch_leaves",
+      "birch_leaves"
     ],
     "solid": true,
     "transparent": true,
@@ -185,8 +281,40 @@
     "light": 15
   },
   {
-    "code": "iron",
-    "name": "Iron",
+    "code": "coal",
+    "name": "Coal",
+    "textures": [
+      "coal",
+      "coal",
+      "coal",
+      "coal",
+      "coal",
+      "coal"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "copper_ore",
+    "name": "Copper ore",
+    "textures": [
+      "ore_copper",
+      "ore_copper",
+      "ore_copper",
+      "ore_copper",
+      "ore_copper",
+      "ore_copper"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "iron_ore",
+    "name": "Iron ore",
     "textures": [
       "ore_iron",
       "ore_iron",
@@ -201,8 +329,8 @@
     "light": 0
   },
   {
-    "code": "gold",
-    "name": "Gold",
+    "code": "gold_ore",
+    "name": "Gold ore",
     "textures": [
       "ore_gold",
       "ore_gold",
@@ -210,6 +338,54 @@
       "ore_gold",
       "ore_gold",
       "ore_gold"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "copper_block",
+    "name": "Copper block",
+    "textures": [
+      "copper_block",
+      "copper_block",
+      "copper_block",
+      "copper_block",
+      "copper_block",
+      "copper_block"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "iron_block",
+    "name": "Iron block",
+    "textures": [
+      "iron_block",
+      "iron_block",
+      "iron_block",
+      "iron_block",
+      "iron_block",
+      "iron_block"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "gold_block",
+    "name": "Gold block",
+    "textures": [
+      "gold_block",
+      "gold_block",
+      "gold_block",
+      "gold_block",
+      "gold_block",
+      "gold_block"
     ],
     "solid": true,
     "transparent": false,
@@ -274,6 +450,22 @@
       "white_concrete",
       "white_concrete",
       "white_concrete"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "concrete_light_gray",
+    "name": "Light-gray concrete",
+    "textures": [
+      "light_gray_concrete",
+      "light_gray_concrete",
+      "light_gray_concrete",
+      "light_gray_concrete",
+      "light_gray_concrete",
+      "light_gray_concrete"
     ],
     "solid": true,
     "transparent": false,
@@ -377,6 +569,22 @@
     "light": 0
   },
   {
+    "code": "concrete_lime",
+    "name": "Lime concrete",
+    "textures": [
+      "lime_concrete",
+      "lime_concrete",
+      "lime_concrete",
+      "lime_concrete",
+      "lime_concrete",
+      "lime_concrete"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
     "code": "concrete_green",
     "name": "Green concrete",
     "textures": [
@@ -409,6 +617,22 @@
     "light": 0
   },
   {
+    "code": "concrete_light_blue",
+    "name": "Light-blue concrete",
+    "textures": [
+      "light_blue_concrete",
+      "light_blue_concrete",
+      "light_blue_concrete",
+      "light_blue_concrete",
+      "light_blue_concrete",
+      "light_blue_concrete"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
     "code": "concrete_blue",
     "name": "Blue concrete",
     "textures": [
@@ -434,6 +658,22 @@
       "purple_concrete",
       "purple_concrete",
       "purple_concrete"
+    ],
+    "solid": true,
+    "transparent": false,
+    "buildable": true,
+    "light": 0
+  },
+  {
+    "code": "concrete_magenta",
+    "name": "Magenta concrete",
+    "textures": [
+      "magenta_concrete",
+      "magenta_concrete",
+      "magenta_concrete",
+      "magenta_concrete",
+      "magenta_concrete",
+      "magenta_concrete"
     ],
     "solid": true,
     "transparent": false,

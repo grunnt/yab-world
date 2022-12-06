@@ -323,10 +323,14 @@ impl MyTexture {
             })?;
             let (this_img_width, this_img_height) = face_img.dimensions();
             let this_img_bytes = face_img.to_bytes();
-            assert!(
-                this_img_bytes.len()
-                    == (this_img_width * this_img_height * format.bytes_per_pixel()) as usize
-            );
+            if this_img_bytes.len()
+                != (this_img_width * this_img_height * format.bytes_per_pixel()) as usize
+            {
+                panic!(
+                    "invalid image file size for {}",
+                    path.as_os_str().to_str().unwrap()
+                );
+            }
             if img_width == 0 {
                 img_width = this_img_width;
             } else {

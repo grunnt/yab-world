@@ -6,6 +6,8 @@ Yet Another Block-World. I made this to learn more about Rust, OpenGL and game d
 
 You can download and run YAB-World for Windows [here](https://github.com/grunnt/yab-world/releases).
 
+Block textures are based on the [Woodpecker texture pack](https://www.planetminecraft.com/texture-pack/woodpecker/) by zob.
+
 ## How to run from source
 
 You will need to have [Rust](https://www.rust-lang.org/) installed.

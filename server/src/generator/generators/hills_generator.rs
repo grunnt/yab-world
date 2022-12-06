@@ -22,6 +22,8 @@ pub struct HillsGenerator {
     sand_block: Block,
     gold_block: Block,
     iron_block: Block,
+    copper_block: Block,
+    coal_block: Block,
     water_block: Block,
 }
 
@@ -31,15 +33,17 @@ impl HillsGenerator {
         let dirt_block = block_registry.block_kind_from_code("dirt");
         let grass_block = block_registry.block_kind_from_code("grass");
         let sand_block = block_registry.block_kind_from_code("sand");
-        let gold_block = block_registry.block_kind_from_code("gold");
-        let iron_block = block_registry.block_kind_from_code("iron");
+        let gold_block = block_registry.block_kind_from_code("gold_ore");
+        let iron_block = block_registry.block_kind_from_code("iron_ore");
+        let copper_block = block_registry.block_kind_from_code("copper_ore");
+        let coal_block = block_registry.block_kind_from_code("coal_ore");
         let water_block = block_registry.block_kind_from_code("water");
 
         HillsGenerator {
             roughness_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0025, 0.025),
             terrain_noise: NoiseSource3D::<Fbm>::new_fbm(seed, 0.0, 1.0),
-            resource_type_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0, 2.0),
-            resource_density_noise: NoiseSource3D::<Perlin>::new_perlin(seed, 0.0, 1.0),
+            resource_type_noise: NoiseSource2D::<Perlin>::new_perlin(seed, 0.0, 400.0),
+            resource_density_noise: NoiseSource3D::<Perlin>::new_perlin(seed, 0.0, 2.0),
             water_z: 80,
             soil_thickness: 3,
             terrain_min_z: 64,
@@ -49,6 +53,8 @@ impl HillsGenerator {
             grass_block,
             gold_block,
             iron_block,
+            copper_block,
+            coal_block,
             sand_block,
             water_block,
         }
@@ -72,11 +78,15 @@ impl HillsGenerator {
                     .powf(3.0);
                 let depth_factor = (1.0 - (z as f64 / 256.0) * 0.1).clamp(0.0, 0.1);
                 if res > 0.7 - depth_factor {
-                    let type_noise = self.resource_type_noise.get(x as f64, y as f64, 0.002);
-                    if type_noise < 1.0 {
-                        self.gold_block
-                    } else {
-                        self.iron_block
+                    let type_noise = self
+                        .resource_type_noise
+                        .get(x as f64, y as f64, 0.002)
+                        .round() as i32;
+                    match type_noise % 100 {
+                        0 => self.gold_block,
+                        1 => self.iron_block,
+                        2 => self.copper_block,
+                        _ => self.coal_block,
                     }
                 } else {
                     self.stone_block

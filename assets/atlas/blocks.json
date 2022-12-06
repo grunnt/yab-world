@@ -1,322 +1,492 @@
 [
   {
     "frame_id": 0,
-    "name": "brown_concrete",
+    "name": "blue_concrete",
     "frame": {
-      "x": 0.10225049,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.125,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 1,
-    "name": "grass_block_side",
+    "name": "ore_gold",
     "frame": {
-      "x": 0.2020548,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.61368775,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 2,
-    "name": "ice",
+    "name": "ore_copper",
     "frame": {
-      "x": 0.3351272,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.5933258,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 3,
-    "name": "white_concrete",
+    "name": "light_blue_concrete",
     "frame": {
-      "x": 0.002446184,
-      "y": 0.5214286,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.4100679,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 4,
-    "name": "oak_planks",
+    "name": "stone_bricks",
     "frame": {
-      "x": 0.5014677,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.9191176,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 5,
-    "name": "gray_concrete",
+    "name": "grass_block_top",
     "frame": {
-      "x": 0.268591,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.28789592,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 6,
-    "name": "ore_iron",
+    "name": "dirt",
     "frame": {
-      "x": 0.601272,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.22680995,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 7,
-    "name": "small_lamp",
+    "name": "green_concrete",
     "frame": {
-      "x": 0.86741686,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.3286199,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 8,
-    "name": "black_concrete",
+    "name": "gold_block",
     "frame": {
-      "x": 0.035714287,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.24717194,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 9,
-    "name": "blue_concrete",
+    "name": "magenta_concrete",
     "frame": {
-      "x": 0.068982385,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.47115386,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 10,
-    "name": "dirt",
+    "name": "brown_concrete",
     "frame": {
-      "x": 0.16878669,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.14536199,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 11,
-    "name": "stone",
+    "name": "oak_leaves",
     "frame": {
-      "x": 0.90068495,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.49151585,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 12,
-    "name": "sandstone",
+    "name": "stone",
     "frame": {
-      "x": 0.7676125,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.89875567,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 13,
-    "name": "bedrock",
+    "name": "orange_concrete",
     "frame": {
-      "x": 0.002446184,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.5729638,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 14,
-    "name": "oak_log_top",
+    "name": "black_concrete",
     "frame": {
-      "x": 0.4681996,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.10463801,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 15,
-    "name": "green_concrete",
+    "name": "spruce_planks",
     "frame": {
-      "x": 0.3018591,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.87839365,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 16,
-    "name": "purple_concrete",
+    "name": "sand",
     "frame": {
-      "x": 0.66780823,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.71549773,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 17,
-    "name": "red_concrete",
+    "name": "oak_log_top",
     "frame": {
-      "x": 0.7010763,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.5322398,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 18,
-    "name": "grass_block_top",
+    "name": "lamp",
     "frame": {
-      "x": 0.2353229,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.3897059,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 19,
-    "name": "stone_bricks",
+    "name": "light_gray_concrete",
     "frame": {
-      "x": 0.93395305,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.43042988,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 20,
-    "name": "yellow_concrete",
+    "name": "copper_block",
     "frame": {
-      "x": 0.035714287,
-      "y": 0.5214286,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.18608597,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 21,
-    "name": "lamp",
+    "name": "spruce_leaves",
     "frame": {
-      "x": 0.3683953,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.8173077,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 22,
-    "name": "ore_gold",
+    "name": "birch_log_top",
     "frame": {
-      "x": 0.5680039,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.06391403,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 23,
-    "name": "leaves",
+    "name": "purple_concrete",
     "frame": {
-      "x": 0.4016634,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.67477375,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 24,
-    "name": "oak_log",
+    "name": "grass_block_side",
     "frame": {
-      "x": 0.43493152,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.26753393,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 25,
-    "name": "orange_concrete",
+    "name": "oak_planks",
     "frame": {
-      "x": 0.5347358,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.5526018,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 26,
-    "name": "sandstone_top",
+    "name": "lime_concrete",
     "frame": {
-      "x": 0.8341487,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.45079187,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 27,
-    "name": "sand",
+    "name": "cyan_concrete",
     "frame": {
-      "x": 0.7343444,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.20644796,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 28,
-    "name": "sandstone_bottom",
+    "name": "oak_log",
     "frame": {
-      "x": 0.8008806,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.51187783,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 29,
-    "name": "cyan_concrete",
+    "name": "sandstone",
     "frame": {
-      "x": 0.1355186,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.73585975,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 30,
-    "name": "pink_concrete",
+    "name": "spruce_log_top",
     "frame": {
-      "x": 0.63454014,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.8580317,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   },
   {
     "frame_id": 31,
     "name": "water",
     "frame": {
-      "x": 0.96722114,
-      "y": 0.035714287,
-      "width": 0.031311154,
-      "height": 0.45714286
+      "x": 0.93947965,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 32,
+    "name": "birch_log",
+    "frame": {
+      "x": 0.043552037,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 33,
+    "name": "birch_leaves",
+    "frame": {
+      "x": 0.023190046,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 34,
+    "name": "white_concrete",
+    "frame": {
+      "x": 0.9598416,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 35,
+    "name": "ice",
+    "frame": {
+      "x": 0.3489819,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 36,
+    "name": "yellow_concrete",
+    "frame": {
+      "x": 0.9802036,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 37,
+    "name": "iron_block",
+    "frame": {
+      "x": 0.36934388,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 38,
+    "name": "birch_planks",
+    "frame": {
+      "x": 0.08427602,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 39,
+    "name": "pink_concrete",
+    "frame": {
+      "x": 0.6544118,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 40,
+    "name": "coal",
+    "frame": {
+      "x": 0.16572398,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 41,
+    "name": "small_lamp",
+    "frame": {
+      "x": 0.7969457,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 42,
+    "name": "sandstone_top",
+    "frame": {
+      "x": 0.77658373,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 43,
+    "name": "red_concrete",
+    "frame": {
+      "x": 0.6951358,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 44,
+    "name": "sandstone_bottom",
+    "frame": {
+      "x": 0.7562217,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 45,
+    "name": "spruce_log",
+    "frame": {
+      "x": 0.8376697,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 46,
+    "name": "bedrock",
+    "frame": {
+      "x": 0.0028280544,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 47,
+    "name": "ore_iron",
+    "frame": {
+      "x": 0.6340498,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
+    }
+  },
+  {
+    "frame_id": 48,
+    "name": "gray_concrete",
+    "frame": {
+      "x": 0.3082579,
+      "y": 0.125,
+      "width": 0.018099548,
+      "height": 0.8
     }
   }
 ]
